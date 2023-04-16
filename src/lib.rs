@@ -4,14 +4,65 @@ pub mod render;
 pub mod error;
 
 use std::io::stdout;
+use std::io::Stdout;
 use std::io::Write;
 
 use crossterm::ExecutableCommand;
+use crossterm::event::read;
+use crossterm::event::Event;
+use crossterm::event::KeyEvent;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEventKind;
+use crossterm::terminal;
+
+use tui::input;
+use tui::Rectangle;
+use tui::Position;
+use tui::Size;
+use error::MessageOnError;
 
 
-pub fn run() -> Result<(), &'static str>
+fn get_terminal_size() -> Result<tui::Size, &'static str>
 {
-    let mut list = gtd::List::new("example list".to_string());
+    let (terminal_width, terminal_height) = match crossterm::terminal::size()
+    {
+        Err(_) => return Err("couldn't fetch console size"),
+        Ok(value) => value
+    };
+
+    Ok(tui::Size::new(terminal_width, terminal_height))
+}
+
+
+fn add_task_to_list(
+    stdout_handle: &mut Stdout,
+    terminal_size: Size,
+    list: &mut gtd::List
+) -> MessageOnError
+{
+    let task_message: String = match input::get_string(
+        "task name",
+        stdout_handle,
+        terminal_size,
+    )?
+    {
+        None => { return Ok(()); },
+        Some(message) => message
+    };
+
+    let task = gtd::ListItem::new(String::from("Amogus"));
+
+    list.push_item(task);
+
+    Ok(())
+}
+
+
+fn main_loop() -> Result<(), &'static str>
+{
+    let mut stdout_handle = stdout();
+
+    let mut current_list = gtd::List::new("example list".to_string());
 
     let mut item1 = gtd::ListItem::new("build a map".to_string());
     let mut item2 = gtd::ListItem::new("tell a story".to_string());
@@ -35,7 +86,7 @@ pub fn run() -> Result<(), &'static str>
     item6
         .add_context("everywhere".to_string());
 
-    list
+    current_list
         .push_item(item1)
         .push_item(item2)
         .push_item(item3)
@@ -43,39 +94,74 @@ pub fn run() -> Result<(), &'static str>
         .push_item(item5)
         .push_item(item6);
 
-    let mut stdout = stdout();
+    let terminal_size = get_terminal_size()?;
 
-    if let Err(_) = stdout.execute(crossterm::terminal::EnterAlternateScreen)
+    let list_rectangle = Rectangle {
+        position: Position { x: 0, y: 0 },
+        size: terminal_size
+    };
+
+    loop
+    {
+        render::draw_list(&mut stdout_handle, &current_list, list_rectangle)?;
+
+        render::flush(&mut stdout_handle)?;
+
+        let event = match read()
+        {
+            Ok(event) => event,
+            Err(_) => { return Err("couldn't read event"); }
+        };
+
+        match event
+        {
+            Event::Key(key_event) => {
+                if key_event.kind != KeyEventKind::Press
+                {
+                    continue;
+                }
+
+                match key_event.code
+                {
+                    KeyCode::Char(character) => {
+                        match character
+                        {
+                            'q' => { break },
+                            'a' => {
+                                add_task_to_list(
+                                    &mut stdout_handle,
+                                    terminal_size,
+                                    &mut current_list
+                                )?;
+                            },
+                            _ => {}
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+
+
+pub fn run() -> Result<(), &'static str>
+{
+    let mut stdout_handle = stdout();
+
+    if let Err(_) = stdout_handle.execute(terminal::EnterAlternateScreen)
     {
         return Err("couldn't enter alternate screen");
     }
 
-    let (terminal_width, terminal_height) = match crossterm::terminal::size()
-    {
-        Err(_) => return Err("couldn't fetch console size"),
-        Ok(value) => value
-    };
+    // Process
+    main_loop()?;
 
-    let list_view = tui::ListView::new(
-        list,
-        0,
-        0,
-        terminal_width,
-        terminal_height
-    );
-
-    render::draw_list_view(&mut stdout, &list_view)?;
-
-    if let Err(_) = stdout.flush()
-    {
-        return Err("couldn't flush to stdout properly");
-    }
-
-    std::thread::sleep(std::time::Duration::from_secs(30));
-
-    if let Err(_) = stdout.execute(
-        crossterm::terminal::LeaveAlternateScreen
-    ) {
+    // Teardown
+    if let Err(_) = stdout_handle.execute(terminal::LeaveAlternateScreen) {
         return Err("couldn't leave alternate screen");
     }
 

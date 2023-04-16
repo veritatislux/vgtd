@@ -1,8 +1,11 @@
-use crate::gtd::List;
-
 pub mod containers;
+pub mod input;
+
+use crate::gtd::List;
+use crate::error::MessageOnError;
 
 
+#[derive(Copy)]
 pub struct Position
 {
     pub x: u16,
@@ -10,6 +13,19 @@ pub struct Position
 }
 
 
+impl Clone for Position
+{
+    fn clone(&self) -> Self
+    {
+        Self {
+            x: self.x,
+            y: self.y
+        }
+    }
+}
+
+
+#[derive(Copy)]
 pub struct Size
 {
     width: u16,
@@ -56,9 +72,31 @@ impl Size
 
         self.height = value;
     }
+
+
+    pub fn clone(&self) -> Self
+    {
+        Self {
+            width: self.width,
+            height: self.height
+        }
+    }
 }
 
 
+impl Clone for Size
+{
+    fn clone(&self) -> Self
+    {
+        Self {
+            width: self.width,
+            height: self.height
+        }
+    }
+}
+
+
+#[derive(Copy)]
 pub struct Rectangle
 {
     pub position: Position,
@@ -66,27 +104,13 @@ pub struct Rectangle
 }
 
 
-pub struct ListView
+impl Clone for Rectangle
 {
-    pub list: List,
-    pub rectangle: Rectangle,
-}
-
-
-impl ListView
-{
-    pub fn new(
-        list: List,
-        x: u16,
-        y: u16,
-        width: u16,
-        height: u16
-    ) -> Self
+    fn clone(&self) -> Self
     {
-        let position = Position { x, y };
-        let size = Size::new(width, height);
-        let rectangle = Rectangle { position, size };
-
-        ListView { list, rectangle }
+        Self {
+            position: self.position,
+            size: self.size
+        }
     }
 }

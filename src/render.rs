@@ -1,4 +1,5 @@
 use std::io::Stdout;
+use std::io::Write;
 
 use crossterm::ExecutableCommand;
 use crossterm::QueueableCommand;
@@ -13,7 +14,7 @@ use crossterm::style::Attribute;
 use crossterm::style::ResetColor;
 
 use crate::gtd::ListItem;
-use crate::tui::ListView;
+use crate::gtd::List;
 use crate::error::MessageOnError;
 use crate::tui::Rectangle;
 
@@ -43,6 +44,17 @@ pub fn execute(stdout: &mut Stdout, command: impl Command) -> MessageOnError
     if let Err(_) = stdout.execute(command)
     {
         return Err("couldn't execute command");
+    }
+
+    Ok(())
+}
+
+
+pub fn flush(stdout: &mut Stdout) -> MessageOnError
+{
+    if let Err(_) = stdout.flush()
+    {
+        return Err("couldn't flush to stdout properly");
     }
 
     Ok(())
@@ -104,7 +116,7 @@ fn make_bottom_line(width: u16) -> String
 }
 
 
-pub fn draw_box(stdout: &mut Stdout, rectangle: &Rectangle) -> MessageOnError
+pub fn draw_box(stdout: &mut Stdout, rectangle: Rectangle) -> MessageOnError
 {
     queue(
         stdout,
@@ -168,7 +180,7 @@ pub fn draw_text_at(
 pub fn draw_title(
     stdout: &mut Stdout,
     title: &str,
-    rectangle: &Rectangle
+    rectangle: Rectangle
 ) -> MessageOnError
 {
     draw_text_at(
@@ -227,7 +239,7 @@ pub fn draw_item(stdout: &mut Stdout, item: &ListItem) -> MessageOnError
 pub fn draw_items(
     stdout: &mut Stdout,
     items: &Vec<ListItem>,
-    rectangle: &Rectangle
+    rectangle: Rectangle
 ) -> MessageOnError
 {
     for (index, item) in items.iter().enumerate()
@@ -249,14 +261,26 @@ pub fn draw_items(
 }
 
 
-pub fn draw_list_view(
+pub fn draw_list(
     stdout: &mut Stdout,
-    list_view: &ListView
+    list: &List,
+    rectangle: Rectangle
 ) -> MessageOnError
 {
-    draw_box(stdout, &list_view.rectangle)?;
-    draw_title(stdout, &list_view.list.name, &list_view.rectangle)?;
-    draw_items(stdout, list_view.list.items(), &list_view.rectangle)?;
+    draw_box(stdout, rectangle)?;
+    draw_title(stdout, &list.name, rectangle)?;
+    draw_items(stdout, &list.items(), rectangle)?;
+
+    Ok(())
+}
+
+
+pub fn draw_input_box(
+    stdout: &mut Stdout,
+    rectangle: Rectangle
+) -> MessageOnError
+{
+    draw_box(stdout, rectangle)?;
 
     Ok(())
 }
