@@ -4,9 +4,6 @@ pub mod input;
 use crossterm::cursor;
 use crossterm::terminal;
 
-use crate::gtd::List;
-use crate::error::MessageOnError;
-
 
 #[derive(Copy)]
 pub struct Position

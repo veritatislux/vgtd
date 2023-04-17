@@ -11,15 +11,12 @@ use crossterm::style::Print;
 use crossterm::style::ResetColor;
 use crossterm::style::SetAttribute;
 use crossterm::style::SetBackgroundColor;
-use crossterm::style::SetForegroundColor
-use crossterm::terminal;
+use crossterm::style::SetForegroundColor;
 
 use crate::error::MessageOnError;
 use crate::gtd::List;
-use crate::gtd::ListItem
-use crate::tui::Position;
+use crate::gtd::ListItem;
 use crate::tui::Rectangle;
-use crate::tui::Size;
 
 
 const BOX_BOTTOM_LEFT_CHAR: char = '┗';

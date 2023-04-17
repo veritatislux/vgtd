@@ -12,7 +12,6 @@ use crate::tui::Position;
 use crate::tui::Rectangle;
 use crate::tui::Size;
 use crate::tui::get_cursor_position;
-use crate::tui::get_terminal_size;
 
 
 const INPUT_BOX_VERTICAL_PADDING: u16 = 0;
@@ -29,10 +28,7 @@ pub fn get_event() -> Result<Event, &'static str>
 }
 
 
-fn capture_string(
-    stdout: &mut Stdout,
-    terminal_size: Size
-) -> Result<Option<String>, &'static str>
+fn capture_string(stdout: &mut Stdout) -> Result<Option<String>, &'static str>
 {
     let mut input_text = String::new();
     let mut cursor_position = get_cursor_position()?;
@@ -134,5 +130,5 @@ pub fn get_string(
 
     render::flush(stdout)?;
 
-    Ok(capture_string(stdout, terminal_size)?)
+    Ok(capture_string(stdout)?)
 }

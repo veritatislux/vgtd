@@ -5,12 +5,9 @@ pub mod error;
 
 use std::io::stdout;
 use std::io::Stdout;
-use std::io::Write;
 
 use crossterm::ExecutableCommand;
-use crossterm::event::read;
 use crossterm::event::Event;
-use crossterm::event::KeyEvent;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use crossterm::terminal;
