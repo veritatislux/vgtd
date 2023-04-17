@@ -12,11 +12,14 @@ use crossterm::style::Print;
 use crossterm::style::Color;
 use crossterm::style::Attribute;
 use crossterm::style::ResetColor;
+use crossterm::terminal;
 
 use crate::gtd::ListItem;
 use crate::gtd::List;
 use crate::error::MessageOnError;
 use crate::tui::Rectangle;
+use crate::tui::Size;
+use crate::tui::Position;
 
 
 const BOX_BOTTOM_LEFT_CHAR: char = '┗';

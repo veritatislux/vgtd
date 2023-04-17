@@ -1,6 +1,9 @@
 pub mod containers;
 pub mod input;
 
+use crossterm::cursor;
+use crossterm::terminal;
+
 use crate::gtd::List;
 use crate::error::MessageOnError;
 
@@ -113,4 +116,28 @@ impl Clone for Rectangle
             size: self.size
         }
     }
+}
+
+
+pub fn get_cursor_position() -> Result<Position, &'static str>
+{
+    let (x, y) = match cursor::position()
+    {
+        Err(_) => return Err("couldn't fetch terminal position"),
+        Ok(value) => value
+    };
+
+    Ok(Position { x, y })
+}
+
+
+pub fn get_terminal_size() -> Result<Size, &'static str>
+{
+    let (terminal_width, terminal_height) = match terminal::size()
+    {
+        Err(_) => return Err("couldn't fetch terminal size"),
+        Ok(value) => value
+    };
+
+    Ok(Size::new(terminal_width, terminal_height))
 }

@@ -1,13 +1,103 @@
 use std::io::Stdout;
 
+use crossterm::cursor;
+use crossterm::style::Print;
+use crossterm::event::Event;
+use crossterm::event::KeyEventKind;
+use crossterm::event::KeyCode;
+use crossterm::event::read;
+
 use crate::render;
 use crate::tui::Rectangle;
 use crate::tui::Size;
 use crate::tui::Position;
+use crate::tui::get_cursor_position;
+use crate::tui::get_terminal_size;
 
 
-const INPUT_BOX_VERTICAL_PADDING: u16 = 1;
+const INPUT_BOX_VERTICAL_PADDING: u16 = 0;
 const INPUT_BOX_HORIZONTAL_PADDING: u16 = 1;
+
+
+pub fn get_event() -> Result<Event, &'static str>
+{
+    match read()
+    {
+        Ok(event) => Ok(event),
+        Err(_) => Err("couldn't read event")
+    }
+}
+
+
+fn capture_string(
+    stdout: &mut Stdout,
+    terminal_size: Size
+) -> Result<Option<String>, &'static str>
+{
+    let mut input_text = String::new();
+    let mut cursor_position = get_cursor_position()?;
+
+    loop
+    {
+        match get_event()?
+        {
+            Event::Key(key_event) => {
+                if key_event.kind != KeyEventKind::Press
+                {
+                    continue;
+                }
+
+                match key_event.code
+                {
+                    KeyCode::Char(character) => {
+                        input_text.push(character);
+                        render::queue(stdout, Print(character))?;
+                        cursor_position.x += 1;
+                    },
+                    KeyCode::Backspace => {
+                        match input_text.pop()
+                        {
+                            Some(_) => {
+                                cursor_position.x -= 1;
+
+                                render::queue(
+                                    stdout,
+                                    cursor::MoveTo(
+                                        cursor_position.x,
+                                        cursor_position.y
+                                    )
+                                )?;
+
+                                render::queue(stdout, Print(' '))?;
+
+                                render::queue(
+                                    stdout,
+                                    cursor::MoveTo(
+                                        cursor_position.x,
+                                        cursor_position.y
+                                    )
+                                )?;
+                            },
+                            None => {}
+                        }
+                    },
+                    KeyCode::Enter => {
+                        return Ok(Some(input_text));
+                    },
+                    KeyCode::Esc => {
+                        return Ok(None);
+                    },
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+
+        render::flush(stdout)?;
+    }
+
+    Ok(None)
+}
 
 
 pub fn get_string(
@@ -16,8 +106,6 @@ pub fn get_string(
     terminal_size: Size,
 ) -> Result<Option<String>, &'static str>
 {
-    let input_text = String::new();
-
     let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
     let position = Position {
         x: 0,
@@ -28,9 +116,25 @@ pub fn get_string(
 
     render::draw_input_box(stdout, rectangle)?;
 
+    render::queue(
+        stdout,
+        cursor::MoveTo(1, rectangle.position.y)
+    )?;
+
+    render::queue(
+        stdout,
+        Print(request.to_uppercase())
+    )?;
+
+    render::queue(
+        stdout,
+        cursor::MoveTo(
+            INPUT_BOX_HORIZONTAL_PADDING + 1,
+            terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
+        )
+    )?;
+
     render::flush(stdout)?;
 
-    std::thread::sleep(std::time::Duration::from_secs(5));
-
-    Ok(Some(input_text))
+    Ok(capture_string(stdout, terminal_size)?)
 }

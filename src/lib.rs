@@ -22,18 +22,6 @@ use tui::Size;
 use error::MessageOnError;
 
 
-fn get_terminal_size() -> Result<tui::Size, &'static str>
-{
-    let (terminal_width, terminal_height) = match crossterm::terminal::size()
-    {
-        Err(_) => return Err("couldn't fetch console size"),
-        Ok(value) => value
-    };
-
-    Ok(tui::Size::new(terminal_width, terminal_height))
-}
-
-
 fn add_task_to_list(
     stdout_handle: &mut Stdout,
     terminal_size: Size,
@@ -50,7 +38,7 @@ fn add_task_to_list(
         Some(message) => message
     };
 
-    let task = gtd::ListItem::new(String::from("Amogus"));
+    let task = gtd::ListItem::new(task_message);
 
     list.push_item(task);
 
@@ -94,7 +82,7 @@ fn main_loop() -> Result<(), &'static str>
         .push_item(item5)
         .push_item(item6);
 
-    let terminal_size = get_terminal_size()?;
+    let terminal_size = tui::get_terminal_size()?;
 
     let list_rectangle = Rectangle {
         position: Position { x: 0, y: 0 },
@@ -107,13 +95,7 @@ fn main_loop() -> Result<(), &'static str>
 
         render::flush(&mut stdout_handle)?;
 
-        let event = match read()
-        {
-            Ok(event) => event,
-            Err(_) => { return Err("couldn't read event"); }
-        };
-
-        match event
+        match input::get_event()?
         {
             Event::Key(key_event) => {
                 if key_event.kind != KeyEventKind::Press
