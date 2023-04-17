@@ -1,1 +1,1 @@
-pub type MessageOnError = Result<(), &'static str>;
+pub type StatusResult<T> = Result<T, &'static str>;

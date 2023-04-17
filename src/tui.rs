@@ -4,6 +4,8 @@ pub mod input;
 use crossterm::cursor;
 use crossterm::terminal;
 
+use crate::error::StatusResult;
+
 
 #[derive(Copy)]
 pub struct Position
@@ -116,7 +118,7 @@ impl Clone for Rectangle
 }
 
 
-pub fn get_cursor_position() -> Result<Position, &'static str>
+pub fn get_cursor_position() -> StatusResult<Position>
 {
     let (x, y) = match cursor::position()
     {
@@ -128,7 +130,7 @@ pub fn get_cursor_position() -> Result<Position, &'static str>
 }
 
 
-pub fn get_terminal_size() -> Result<Size, &'static str>
+pub fn get_terminal_size() -> StatusResult<Size>
 {
     let (terminal_width, terminal_height) = match terminal::size()
     {

@@ -12,13 +12,14 @@ use crate::tui::Position;
 use crate::tui::Rectangle;
 use crate::tui::Size;
 use crate::tui::get_cursor_position;
+use crate::error::StatusResult;
 
 
 const INPUT_BOX_VERTICAL_PADDING: u16 = 0;
 const INPUT_BOX_HORIZONTAL_PADDING: u16 = 1;
 
 
-pub fn get_event() -> Result<Event, &'static str>
+pub fn get_event() -> StatusResult<Event>
 {
     match read()
     {
@@ -28,7 +29,7 @@ pub fn get_event() -> Result<Event, &'static str>
 }
 
 
-fn capture_string(stdout: &mut Stdout) -> Result<Option<String>, &'static str>
+fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
 {
     let mut input_text = String::new();
     let mut cursor_position = get_cursor_position()?;
@@ -98,7 +99,7 @@ pub fn get_string(
     request: &str,
     stdout: &mut Stdout,
     terminal_size: Size,
-) -> Result<Option<String>, &'static str>
+) -> StatusResult<Option<String>>
 {
     let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
     let position = Position {

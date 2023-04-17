@@ -13,7 +13,7 @@ use crossterm::style::SetAttribute;
 use crossterm::style::SetBackgroundColor;
 use crossterm::style::SetForegroundColor;
 
-use crate::error::MessageOnError;
+use crate::error::StatusResult;
 use crate::gtd::List;
 use crate::gtd::ListItem;
 use crate::tui::Rectangle;
@@ -28,7 +28,7 @@ const BOX_VERTICAL_CHAR: char = '┃';
 const EMPTY_SPACE: char = ' ';
 
 
-pub fn queue(stdout: &mut Stdout, command: impl Command) -> MessageOnError
+pub fn queue(stdout: &mut Stdout, command: impl Command) -> StatusResult<()>
 {
     if let Err(_) = stdout.queue(command)
     {
@@ -39,7 +39,7 @@ pub fn queue(stdout: &mut Stdout, command: impl Command) -> MessageOnError
 }
 
 
-pub fn execute(stdout: &mut Stdout, command: impl Command) -> MessageOnError
+pub fn execute(stdout: &mut Stdout, command: impl Command) -> StatusResult<()>
 {
     if let Err(_) = stdout.execute(command)
     {
@@ -50,7 +50,7 @@ pub fn execute(stdout: &mut Stdout, command: impl Command) -> MessageOnError
 }
 
 
-pub fn flush(stdout: &mut Stdout) -> MessageOnError
+pub fn flush(stdout: &mut Stdout) -> StatusResult<()>
 {
     if let Err(_) = stdout.flush()
     {
@@ -116,7 +116,7 @@ fn make_bottom_line(width: u16) -> String
 }
 
 
-pub fn draw_box(stdout: &mut Stdout, rectangle: Rectangle) -> MessageOnError
+pub fn draw_box(stdout: &mut Stdout, rectangle: Rectangle) -> StatusResult<()>
 {
     queue(
         stdout,
@@ -147,7 +147,7 @@ pub fn draw_text(
     attribute: Attribute,
     foreground_color: Color,
     background_color: Color,
-) -> MessageOnError
+) -> StatusResult<()>
 {
     queue(stdout, SetAttribute(attribute))?;
     queue(stdout, SetForegroundColor(foreground_color))?;
@@ -168,7 +168,7 @@ pub fn draw_text_at(
     background_color: Color,
     x: u16,
     y: u16
-) -> MessageOnError
+) -> StatusResult<()>
 {
     queue(stdout, cursor::MoveTo(x, y))?;
     draw_text(stdout, text, attribute, foreground_color, background_color)?;
@@ -181,7 +181,7 @@ pub fn draw_title(
     stdout: &mut Stdout,
     title: &str,
     rectangle: Rectangle
-) -> MessageOnError
+) -> StatusResult<()>
 {
     draw_text_at(
         stdout,
@@ -200,7 +200,7 @@ pub fn draw_title(
 pub fn draw_item_contexts(
     stdout: &mut Stdout,
     contexts: &Vec::<String>
-) -> MessageOnError
+) -> StatusResult<()>
 {
     queue(stdout, Print(" "))?;
 
@@ -221,7 +221,7 @@ pub fn draw_item_contexts(
 }
 
 
-pub fn draw_item(stdout: &mut Stdout, item: &ListItem) -> MessageOnError
+pub fn draw_item(stdout: &mut Stdout, item: &ListItem) -> StatusResult<()>
 {
     queue(stdout, Print(format!("* {}", item.message)))?;
 
@@ -240,7 +240,7 @@ pub fn draw_items(
     stdout: &mut Stdout,
     items: &Vec<ListItem>,
     rectangle: Rectangle
-) -> MessageOnError
+) -> StatusResult<()>
 {
     for (index, item) in items.iter().enumerate()
     {
@@ -265,7 +265,7 @@ pub fn draw_list(
     stdout: &mut Stdout,
     list: &List,
     rectangle: Rectangle
-) -> MessageOnError
+) -> StatusResult<()>
 {
     draw_box(stdout, rectangle)?;
     draw_title(stdout, &list.name, rectangle)?;
@@ -278,7 +278,7 @@ pub fn draw_list(
 pub fn draw_input_box(
     stdout: &mut Stdout,
     rectangle: Rectangle
-) -> MessageOnError
+) -> StatusResult<()>
 {
     draw_box(stdout, rectangle)?;
 
