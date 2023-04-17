@@ -1,25 +1,25 @@
 use std::io::Stdout;
 use std::io::Write;
 
+use crossterm::Command;
 use crossterm::ExecutableCommand;
 use crossterm::QueueableCommand;
-use crossterm::Command;
-use crossterm::style::SetAttribute;
-use crossterm::style::SetForegroundColor;
-use crossterm::style::SetBackgroundColor;
 use crossterm::cursor;
-use crossterm::style::Print;
-use crossterm::style::Color;
 use crossterm::style::Attribute;
+use crossterm::style::Color;
+use crossterm::style::Print;
 use crossterm::style::ResetColor;
+use crossterm::style::SetAttribute;
+use crossterm::style::SetBackgroundColor;
+use crossterm::style::SetForegroundColor
 use crossterm::terminal;
 
-use crate::gtd::ListItem;
-use crate::gtd::List;
 use crate::error::MessageOnError;
+use crate::gtd::List;
+use crate::gtd::ListItem
+use crate::tui::Position;
 use crate::tui::Rectangle;
 use crate::tui::Size;
-use crate::tui::Position;
 
 
 const BOX_BOTTOM_LEFT_CHAR: char = '┗';

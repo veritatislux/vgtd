@@ -1,16 +1,16 @@
 use std::io::Stdout;
 
 use crossterm::cursor;
-use crossterm::style::Print;
 use crossterm::event::Event;
-use crossterm::event::KeyEventKind;
 use crossterm::event::KeyCode;
+use crossterm::event::KeyEventKind;
 use crossterm::event::read;
+use crossterm::style::Print;
 
 use crate::render;
+use crate::tui::Position;
 use crate::tui::Rectangle;
 use crate::tui::Size;
-use crate::tui::Position;
 use crate::tui::get_cursor_position;
 use crate::tui::get_terminal_size;
 
@@ -95,8 +95,6 @@ fn capture_string(
 
         render::flush(stdout)?;
     }
-
-    Ok(None)
 }
 
 
