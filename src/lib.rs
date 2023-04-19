@@ -25,19 +25,43 @@ fn add_task_to_list(
     list: &mut gtd::List
 ) -> StatusResult<()>
 {
-    let task_message: String = match input::get_string(
-        "task name",
+    let task_name: String = match input::get_string(
+        "Create new task",
+        "Task name",
         stdout_handle,
         terminal_size,
     )?
     {
         None => { return Ok(()); },
-        Some(message) => message
+        Some(name) => name
     };
 
-    let task = gtd::ListItem::new(task_message);
+    let task = gtd::ListItem::new(task_name);
 
     list.push_item(task);
+
+    Ok(())
+}
+
+
+fn change_task_name(
+    stdout_handle: &mut Stdout,
+    terminal_size: Size,
+    list_item: &mut gtd::ListItem
+) -> StatusResult<()>
+{
+    let new_task_name: String = match input::get_string(
+        "Change task name",
+        "New task name",
+        stdout_handle,
+        terminal_size
+    )?
+    {
+        None => { return Ok(()); },
+        Some(new_name) => new_name
+    };
+
+    list_item.message = new_task_name;
 
     Ok(())
 }
@@ -51,7 +75,11 @@ fn main_loop() -> StatusResult<()>
 
     let mut item1 = gtd::ListItem::new("build a map".to_string());
 
-    item1.add_context("cartography lounge".to_string());
+    let mut selected_item_index: usize = 0;
+
+    item1
+        .add_context("cartography lounge".to_string())
+        .add_context("Santander workplace".to_string());
 
     current_list.push_item(item1);
 
@@ -64,11 +92,16 @@ fn main_loop() -> StatusResult<()>
 
     loop
     {
-        render::draw_list(&mut stdout_handle, &current_list, list_rectangle)?;
+        render::draw_list(
+            &mut stdout_handle,
+            &current_list,
+            list_rectangle,
+            selected_item_index
+        )?;
 
         render::flush(&mut stdout_handle)?;
 
-        match input::get_event()?
+        let key_event = match input::get_event()?
         {
             Event::Key(key_event) => {
                 if key_event.kind != KeyEventKind::Press
@@ -76,21 +109,42 @@ fn main_loop() -> StatusResult<()>
                     continue;
                 }
 
-                match key_event.code
+                key_event
+            },
+            _ => { continue; }
+        };
+
+        match key_event.code
+        {
+            KeyCode::Char(character) => {
+                match character
                 {
-                    KeyCode::Char(character) => {
-                        match character
+                    'q' => { break },
+                    'j' => {
+                        if selected_item_index < current_list.len() - 1
                         {
-                            'q' => { break },
-                            'a' => {
-                                add_task_to_list(
-                                    &mut stdout_handle,
-                                    terminal_size,
-                                    &mut current_list
-                                )?;
-                            },
-                            _ => {}
+                            selected_item_index += 1;
                         }
+                    },
+                    'k' => {
+                        if selected_item_index > 0
+                        {
+                            selected_item_index -= 1;
+                        }
+                    },
+                    'a' => {
+                        add_task_to_list(
+                            &mut stdout_handle,
+                            terminal_size,
+                            &mut current_list
+                        )?;
+                    },
+                    'c' => {
+                        change_task_name(
+                            &mut stdout_handle,
+                            terminal_size,
+                            &mut current_list.mut_items()[selected_item_index]
+                        )?;
                     },
                     _ => {}
                 }

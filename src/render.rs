@@ -202,18 +202,16 @@ pub fn draw_item_contexts(
     contexts: &Vec::<String>
 ) -> StatusResult<()>
 {
-    queue(stdout, Print(" "))?;
-
     for context in contexts
     {
-        queue(stdout, Print(" "))?;
+        queue(stdout, Print("  "))?;
 
         draw_text(
             stdout,
-            format!(" @{} ", context).as_str(),
+            format!("@{}", context).as_str(),
             Attribute::Bold,
-            Color::Black,
-            Color::Magenta
+            Color::Magenta,
+            Color::Black
         )?;
     }
 
@@ -225,11 +223,31 @@ pub fn draw_item(stdout: &mut Stdout, item: &ListItem) -> StatusResult<()>
 {
     queue(stdout, Print(format!("* {}", item.message)))?;
 
-    let contexts = item.contexts();
-
-    if contexts.len() > 0
+    if item.contexts().len() > 0
     {
-        draw_item_contexts(stdout, contexts)?;
+        draw_item_contexts(stdout, item.contexts())?;
+    }
+
+    Ok(())
+}
+
+
+pub fn draw_selected_item(
+    stdout: &mut Stdout,
+    item: &ListItem
+) -> StatusResult<()>
+{
+    draw_text(
+        stdout,
+        format!("> {}", item.message).as_str(),
+        Attribute::Bold,
+        Color::Cyan,
+        Color::Reset
+    )?;
+
+    if item.contexts().len() > 0
+    {
+        draw_item_contexts(stdout, item.contexts())?;
     }
 
     Ok(())
@@ -239,7 +257,8 @@ pub fn draw_item(stdout: &mut Stdout, item: &ListItem) -> StatusResult<()>
 pub fn draw_items(
     stdout: &mut Stdout,
     items: &Vec<ListItem>,
-    rectangle: Rectangle
+    rectangle: Rectangle,
+    selected_item: usize
 ) -> StatusResult<()>
 {
     for (index, item) in items.iter().enumerate()
@@ -250,11 +269,18 @@ pub fn draw_items(
             stdout,
             cursor::MoveTo(
                 4 + rectangle.position.x,
-                4 + rectangle.position.y + y_offset * 2
+                4 + rectangle.position.y + y_offset
             )
         )?;
 
-        draw_item(stdout, item)?;
+        if usize::from(y_offset) == selected_item
+        {
+            draw_selected_item(stdout, item)?;
+        }
+        else
+        {
+            draw_item(stdout, item)?;
+        }
     }
 
     Ok(())
@@ -264,12 +290,17 @@ pub fn draw_items(
 pub fn draw_list(
     stdout: &mut Stdout,
     list: &List,
-    rectangle: Rectangle
+    rectangle: Rectangle,
+    selected_item: usize
 ) -> StatusResult<()>
 {
     draw_box(stdout, rectangle)?;
     draw_title(stdout, &list.name, rectangle)?;
-    draw_items(stdout, &list.items(), rectangle)?;
+
+    if list.items().len() > 0
+    {
+        draw_items(stdout, &list.items(), rectangle, selected_item)?;
+    }
 
     Ok(())
 }

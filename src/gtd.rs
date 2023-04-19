@@ -48,7 +48,16 @@ impl List
     }
 
 
+    pub fn len(&self) -> usize
+    {
+        self.items().len()
+    }
+
+
     pub fn items(&self) -> &Vec<ListItem> { &self.items }
+
+
+    pub fn mut_items(&mut self) -> &mut Vec<ListItem> { &mut self.items }
 
 
     pub fn push_item(&mut self, item: ListItem) -> &mut Self

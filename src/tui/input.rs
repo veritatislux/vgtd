@@ -6,6 +6,8 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use crossterm::event::read;
 use crossterm::style::Print;
+use crossterm::style::Attribute;
+use crossterm::style::Color;
 
 use crate::render;
 use crate::tui::Position;
@@ -54,6 +56,7 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
                     KeyCode::Backspace => {
                         match input_text.pop()
                         {
+                            None => {},
                             Some(_) => {
                                 cursor_position.x -= 1;
 
@@ -74,12 +77,17 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
                                         cursor_position.y
                                     )
                                 )?;
-                            },
-                            None => {}
+                            }
                         }
                     },
                     KeyCode::Enter => {
-                        return Ok(Some(input_text));
+                        return match input_text.trim()
+                        {
+                            "" => Ok(None),
+                            trimmed_input => Ok(Some(
+                                trimmed_input.to_string()
+                            ))
+                        }
                     },
                     KeyCode::Esc => {
                         return Ok(None);
@@ -96,6 +104,7 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
 
 
 pub fn get_string(
+    input_box_title: &str,
     request: &str,
     stdout: &mut Stdout,
     terminal_size: Size,
@@ -111,14 +120,14 @@ pub fn get_string(
 
     render::draw_input_box(stdout, rectangle)?;
 
-    render::queue(
+    render::draw_text_at(
         stdout,
-        cursor::MoveTo(1, rectangle.position.y)
-    )?;
-
-    render::queue(
-        stdout,
-        Print(request.to_uppercase())
+        input_box_title,
+        Attribute::Reset,
+        Color::Cyan,
+        Color::Reset,
+        2,
+        rectangle.position.y
     )?;
 
     render::queue(
@@ -129,7 +138,15 @@ pub fn get_string(
         )
     )?;
 
+    render::draw_text(
+        stdout,
+        format!("{}: ", request).as_str(),
+        Attribute::Bold,
+        Color::Yellow,
+        Color::Reset
+    )?;
+
     render::flush(stdout)?;
 
-    Ok(capture_string(stdout)?)
+    return capture_string(stdout)
 }
