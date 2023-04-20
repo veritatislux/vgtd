@@ -27,6 +27,15 @@ impl Clone for Position
 }
 
 
+impl Position
+{
+    pub fn new() -> Self
+    {
+        Self { x: 0, y: 0 }
+    }
+}
+
+
 #[derive(Copy)]
 pub struct Size
 {

@@ -1,20 +1,16 @@
-use std::io::Stdout;
-
-use crossterm::cursor;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use crossterm::event::read;
-use crossterm::style::Print;
 use crossterm::style::Attribute;
 use crossterm::style::Color;
 
-use crate::render;
+use crate::error::StatusResult;
+use crate::render::Renderer;
 use crate::tui::Position;
 use crate::tui::Rectangle;
 use crate::tui::Size;
 use crate::tui::get_cursor_position;
-use crate::error::StatusResult;
 
 
 const INPUT_BOX_VERTICAL_PADDING: u16 = 0;
@@ -23,18 +19,20 @@ const INPUT_BOX_HORIZONTAL_PADDING: u16 = 1;
 
 pub fn get_event() -> StatusResult<Event>
 {
-    match read()
-    {
-        Ok(event) => Ok(event),
-        Err(_) => Err("couldn't read event")
-    }
+    read().or(Err("couldn't read event"))
 }
 
 
-fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
+fn read_string(
+    renderer: &mut Renderer,
+    initial_text: String
+) -> StatusResult<Option<String>>
 {
-    let mut input_text = String::new();
+    let mut input_text = initial_text;
     let mut cursor_position = get_cursor_position()?;
+
+    renderer.show_cursor()?;
+    renderer.flush()?;
 
     loop
     {
@@ -50,7 +48,8 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
                 {
                     KeyCode::Char(character) => {
                         input_text.push(character);
-                        render::queue(stdout, Print(character))?;
+                        renderer.print(character)?;
+
                         cursor_position.x += 1;
                     },
                     KeyCode::Backspace => {
@@ -60,23 +59,9 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
                             Some(_) => {
                                 cursor_position.x -= 1;
 
-                                render::queue(
-                                    stdout,
-                                    cursor::MoveTo(
-                                        cursor_position.x,
-                                        cursor_position.y
-                                    )
-                                )?;
-
-                                render::queue(stdout, Print(' '))?;
-
-                                render::queue(
-                                    stdout,
-                                    cursor::MoveTo(
-                                        cursor_position.x,
-                                        cursor_position.y
-                                    )
-                                )?;
+                                renderer.move_cursor_to(cursor_position)?;
+                                renderer.print(' ')?;
+                                renderer.move_cursor_to(cursor_position)?;
                             }
                         }
                     },
@@ -98,17 +83,17 @@ fn capture_string(stdout: &mut Stdout) -> StatusResult<Option<String>>
             _ => {}
         }
 
-        render::flush(stdout)?;
+        renderer.flush()?;
     }
 }
 
 
-pub fn get_string(
+pub fn draw_input_frame(
+    renderer: &mut Renderer,
     input_box_title: &str,
     request: &str,
-    stdout: &mut Stdout,
     terminal_size: Size,
-) -> StatusResult<Option<String>>
+) -> StatusResult<()>
 {
     let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
     let position = Position {
@@ -118,35 +103,77 @@ pub fn get_string(
     let size = Size::new(terminal_size.width(), input_box_height);
     let rectangle = Rectangle { position, size };
 
-    render::draw_input_box(stdout, rectangle)?;
+    renderer.draw_input_box(rectangle)?;
 
-    render::draw_text_at(
-        stdout,
+    renderer.draw_text_at(
         input_box_title,
         Attribute::Reset,
         Color::Cyan,
         Color::Reset,
-        2,
-        rectangle.position.y
+        Position { x: 2, y: rectangle.position.y }
     )?;
 
-    render::queue(
-        stdout,
-        cursor::MoveTo(
-            INPUT_BOX_HORIZONTAL_PADDING + 1,
-            terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
-        )
+    renderer.move_cursor_to(
+        Position {
+            x: INPUT_BOX_HORIZONTAL_PADDING + 1,
+            y: terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
+        }
     )?;
 
-    render::draw_text(
-        stdout,
-        format!("{}: ", request).as_str(),
+    renderer.draw_text(
+        format!("{}: ", request),
         Attribute::Bold,
         Color::Yellow,
         Color::Reset
     )?;
 
-    render::flush(stdout)?;
+    Ok(())
+}
 
-    return capture_string(stdout)
+
+pub fn get_string(
+    renderer: &mut Renderer,
+    input_box_title: &str,
+    request: &str,
+    terminal_size: Size,
+) -> StatusResult<Option<String>>
+{
+    draw_input_frame(renderer, input_box_title, request, terminal_size)?;
+
+    renderer.flush()?;
+
+    let result = read_string(renderer, String::new());
+
+    renderer.hide_cursor()?;
+    renderer.flush()?;
+
+    result
+}
+
+
+pub fn get_string_with_preview(
+    renderer: &mut Renderer,
+    input_box_title: &str,
+    request: &str,
+    preview_text: &str,
+    terminal_size: Size,
+) -> StatusResult<Option<String>>
+{
+    draw_input_frame(renderer, input_box_title, request, terminal_size)?;
+
+    renderer.draw_text(
+        preview_text,
+        Attribute::Reset,
+        Color::Reset,
+        Color::Reset
+    )?;
+
+    renderer.flush()?;
+
+    let result = read_string(renderer, preview_text.to_string());
+
+    renderer.hide_cursor()?;
+    renderer.flush()?;
+
+    result
 }

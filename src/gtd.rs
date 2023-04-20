@@ -1,15 +1,15 @@
-pub struct ListItem
+pub struct Task
 {
     pub message: String,
     contexts: Vec<String>
 }
 
 
-impl ListItem
+impl Task
 {
     pub fn new(message: String) -> Self
     {
-        ListItem
+        Task
         {
             message,
             contexts: Vec::<String>::new()
@@ -32,7 +32,7 @@ impl ListItem
 pub struct List
 {
     pub name: String,
-    items: Vec<ListItem>,
+    tasks: Vec<Task>,
 }
 
 
@@ -43,33 +43,33 @@ impl List
         List
         {
             name,
-            items: Vec::<ListItem>::new(),
+            tasks: Vec::<Task>::new(),
         }
     }
 
 
     pub fn len(&self) -> usize
     {
-        self.items().len()
+        self.tasks().len()
     }
 
 
-    pub fn items(&self) -> &Vec<ListItem> { &self.items }
+    pub fn tasks(&self) -> &Vec<Task> { &self.tasks }
 
 
-    pub fn mut_items(&mut self) -> &mut Vec<ListItem> { &mut self.items }
+    pub fn mut_tasks(&mut self) -> &mut Vec<Task> { &mut self.tasks }
 
 
-    pub fn push_item(&mut self, item: ListItem) -> &mut Self
+    pub fn push_task(&mut self, task: Task) -> &mut Self
     {
-        self.items.push(item);
+        self.tasks.push(task);
 
         self
     }
 
 
-    pub fn move_item(&mut self, index: usize, target_list: &mut List)
+    pub fn move_task(&mut self, index: usize, target_list: &mut List)
     {
-        target_list.items.push(self.items.remove(index));
+        target_list.tasks.push(self.tasks.remove(index));
     }
 }
