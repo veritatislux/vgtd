@@ -171,5 +171,8 @@ pub fn run() -> StatusResult<()>
         return Err("couldn't leave alternate screen");
     }
 
+    renderer.show_cursor()?;
+    renderer.flush()?;
+
     Ok(())
 }
