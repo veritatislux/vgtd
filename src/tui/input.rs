@@ -34,7 +34,7 @@ fn read_string(
     renderer.show_cursor()?;
     renderer.flush()?;
 
-    loop
+    let result: StatusResult<Option<String>> = loop
     {
         match get_event()?
         {
@@ -66,16 +66,14 @@ fn read_string(
                         }
                     },
                     KeyCode::Enter => {
-                        return match input_text.trim()
+                        break Ok(match input_text.trim()
                         {
-                            "" => Ok(None),
-                            trimmed_input => Ok(Some(
-                                trimmed_input.to_string()
-                            ))
-                        }
+                            "" => None,
+                            trimmed_input => Some(trimmed_input.to_string())
+                        });
                     },
                     KeyCode::Esc => {
-                        return Ok(None);
+                        break Ok(None);
                     },
                     _ => {}
                 }
@@ -84,7 +82,12 @@ fn read_string(
         }
 
         renderer.flush()?;
-    }
+    };
+
+    renderer.hide_cursor()?;
+    renderer.flush()?;
+
+    result
 }
 
 
@@ -144,9 +147,6 @@ pub fn get_string(
 
     let result = read_string(renderer, String::new());
 
-    renderer.hide_cursor()?;
-    renderer.flush()?;
-
     result
 }
 
@@ -171,9 +171,6 @@ pub fn get_string_with_preview(
     renderer.flush()?;
 
     let result = read_string(renderer, preview_text.to_string());
-
-    renderer.hide_cursor()?;
-    renderer.flush()?;
 
     result
 }
