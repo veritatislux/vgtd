@@ -7,14 +7,9 @@ use crossterm::style::Color;
 
 use crate::error::StatusResult;
 use crate::render::Renderer;
-use crate::tui::Position;
-use crate::tui::Rectangle;
+use crate::render::draw_input_frame;
 use crate::tui::Size;
 use crate::tui::get_cursor_position;
-
-
-const INPUT_BOX_VERTICAL_PADDING: u16 = 0;
-const INPUT_BOX_HORIZONTAL_PADDING: u16 = 1;
 
 
 pub fn get_event() -> StatusResult<Event>
@@ -88,49 +83,6 @@ fn read_string(
     renderer.flush()?;
 
     result
-}
-
-
-pub fn draw_input_frame(
-    renderer: &mut Renderer,
-    input_box_title: &str,
-    request: &str,
-    terminal_size: Size,
-) -> StatusResult<()>
-{
-    let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
-    let position = Position {
-        x: 0,
-        y: terminal_size.height() - input_box_height
-    };
-    let size = Size::new(terminal_size.width(), input_box_height);
-    let rectangle = Rectangle { position, size };
-
-    renderer.draw_input_box(rectangle)?;
-
-    renderer.draw_text_at(
-        input_box_title,
-        Attribute::Reset,
-        Color::Cyan,
-        Color::Reset,
-        Position { x: 2, y: rectangle.position.y }
-    )?;
-
-    renderer.move_cursor_to(
-        Position {
-            x: INPUT_BOX_HORIZONTAL_PADDING + 1,
-            y: terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
-        }
-    )?;
-
-    renderer.draw_text(
-        format!("{}: ", request),
-        Attribute::Bold,
-        Color::Yellow,
-        Color::Reset
-    )?;
-
-    Ok(())
 }
 
 
