@@ -29,60 +29,56 @@ fn read_string(
     renderer.show_cursor()?;
     renderer.flush()?;
 
-    let result: StatusResult<Option<String>> = loop
+    let result: Option<String> = loop
     {
-        match get_event()?
+        if let Event::Key(event) = get_event()?
         {
-            Event::Key(key_event) => {
-                if key_event.kind != KeyEventKind::Press
-                {
-                    continue;
-                }
+            if event.kind != KeyEventKind::Press
+            {
+                continue;
+            }
 
-                match key_event.code
-                {
-                    KeyCode::Char(character) => {
-                        input_text.push(character);
-                        renderer.print(character)?;
+            match event.code
+            {
+                KeyCode::Char(character) => {
+                    input_text.push(character);
+                    renderer.print(character)?;
 
-                        cursor_position.x += 1;
-                    },
-                    KeyCode::Backspace => {
-                        match input_text.pop()
-                        {
-                            None => {},
-                            Some(_) => {
-                                cursor_position.x -= 1;
+                    cursor_position.x += 1;
+                },
+                KeyCode::Backspace => {
+                    if let Some(_) = input_text.pop()
+                    {
+                        cursor_position.x -= 1;
 
-                                renderer.move_cursor_to(cursor_position)?;
-                                renderer.print(' ')?;
-                                renderer.move_cursor_to(cursor_position)?;
-                            }
-                        }
-                    },
-                    KeyCode::Enter => {
-                        break Ok(match input_text.trim()
-                        {
-                            "" => None,
-                            trimmed_input => Some(trimmed_input.to_string())
-                        });
-                    },
-                    KeyCode::Esc => {
-                        break Ok(None);
-                    },
-                    _ => {}
-                }
-            },
-            _ => {}
+                        renderer.print_at(' ', cursor_position)?;
+                        renderer.move_cursor_to(cursor_position)?;
+                    }
+                },
+                KeyCode::Enter => {
+                    let trimmed_input = input_text.trim();
+
+                    if trimmed_input.is_empty()
+                    {
+                        break None;
+                    }
+
+                    break Some(trimmed_input.to_string());
+                },
+                KeyCode::Esc => {
+                    break None;
+                },
+                _ => {}
+            }
+
+            renderer.flush()?;
         }
-
-        renderer.flush()?;
     };
 
     renderer.hide_cursor()?;
     renderer.flush()?;
 
-    result
+    Ok(result)
 }
 
 

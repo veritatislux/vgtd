@@ -92,6 +92,18 @@ impl Renderer
         self.queue(Print(text))
     }
 
+    pub fn print_at<T: Display>(
+        &mut self,
+        text: T,
+        position: Position
+    ) -> StatusResult<()>
+    {
+        self.move_cursor_to(position)?;
+        self.print(text)?;
+
+        Ok(())
+    }
+
     pub fn hide_cursor(&mut self) -> StatusResult<()>
     {
         self.queue(cursor::Hide)
