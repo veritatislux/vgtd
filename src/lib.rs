@@ -96,55 +96,47 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
 
         renderer.flush()?;
 
-        let key_event = match input::get_event()?
+        let key_event = if let Event::Key(event) = input::get_event()?
         {
-            Event::Key(key_event) => {
-                if key_event.kind != KeyEventKind::Press
-                {
-                    continue;
-                }
+            if event.kind != KeyEventKind::Press
+            {
+                continue;
+            }
 
-                key_event
-            },
-            _ => { continue; }
+            event
+        }
+        else
+        {
+            continue;
         };
 
-        match key_event.code
+        if let KeyCode::Char(character) = key_event.code
         {
-            KeyCode::Char(character) => {
-                match character
-                {
-                    'q' => { break },
-                    'j' => {
-                        if selected_task_index < current_list.len() - 1
-                        {
-                            selected_task_index += 1;
-                        }
-                    },
-                    'k' => {
-                        if selected_task_index > 0
-                        {
-                            selected_task_index -= 1;
-                        }
-                    },
-                    'a' => {
-                        add_task_to_list(
-                            renderer,
-                            terminal_size,
-                            &mut current_list
-                        )?;
-                    },
-                    'c' => {
-                        change_task_name(
-                            renderer,
-                            terminal_size,
-                            &mut current_list.mut_tasks()[selected_task_index]
-                        )?;
-                    },
-                    _ => {}
-                }
-            },
-            _ => {}
+            match character
+            {
+                'q' => { break },
+                'j' if selected_task_index < current_list.len() - 1 => {
+                    selected_task_index += 1;
+                },
+                'k' if selected_task_index > 0 => {
+                    selected_task_index -= 1;
+                },
+                'a' => {
+                    add_task_to_list(
+                        renderer,
+                        terminal_size,
+                        &mut current_list
+                    )?;
+                },
+                'c' => {
+                    change_task_name(
+                        renderer,
+                        terminal_size,
+                        &mut current_list.mut_tasks()[selected_task_index]
+                    )?;
+                },
+                _ => {}
+            }
         }
     }
 
