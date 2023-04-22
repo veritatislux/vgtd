@@ -58,12 +58,14 @@ fn read_string(
                 KeyCode::Enter => {
                     let trimmed_input = input_text.trim();
 
-                    if trimmed_input.is_empty()
+                    break if trimmed_input.is_empty()
                     {
-                        break None;
+                        None
                     }
-
-                    break Some(trimmed_input.to_string());
+                    else
+                    {
+                        Some(trimmed_input.to_string())
+                    };
                 },
                 KeyCode::Esc => {
                     break None;

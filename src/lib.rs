@@ -127,6 +127,8 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                         terminal_size,
                         &mut current_list
                     )?;
+
+                    selected_task_index = current_list.len() - 1;
                 },
                 'c' => {
                     change_task_name(
