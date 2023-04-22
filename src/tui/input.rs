@@ -1,6 +1,7 @@
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
+use crossterm::event::KeyModifiers;
 use crossterm::event::read;
 use crossterm::style::Attribute;
 use crossterm::style::Color;
@@ -9,6 +10,7 @@ use crate::error::StatusResult;
 use crate::render::Renderer;
 use crate::render::draw_input_frame;
 use crate::tui::Size;
+use crate::tui::Position;
 use crate::tui::get_cursor_position;
 
 
@@ -40,11 +42,39 @@ fn read_string(
 
             match event.code
             {
-                KeyCode::Char(character) => {
-                    input_text.push(character);
-                    renderer.print(character)?;
+                KeyCode::Char(character)
+                if event.modifiers.contains(KeyModifiers::CONTROL) => {
+                    match character
+                    {
+                        'u' => {
+                            let input_length: u16 =
+                                input_text.len().try_into().unwrap();
 
+                            for x in
+                                cursor_position.x - input_length
+                                ..(cursor_position.x)
+                            {
+                                renderer.print_at(
+                                    ' ',
+                                    Position {
+                                        x,
+                                        y: cursor_position.y
+                                    }
+                                )?;
+                            }
+
+                            cursor_position.x -= input_length;
+                            renderer.move_cursor_to(cursor_position)?;
+
+                            input_text.clear();
+                        },
+                        _ => {}
+                    }
+                },
+                KeyCode::Char(character) => {
                     cursor_position.x += 1;
+                    renderer.print(character)?;
+                    input_text.push(character);
                 },
                 KeyCode::Backspace => {
                     if let Some(_) = input_text.pop()
