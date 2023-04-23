@@ -5,6 +5,8 @@ use crossterm::event::KeyModifiers;
 use crossterm::event::read;
 use crossterm::style::Attribute;
 use crossterm::style::Color;
+use regex::Regex;
+use lazy_static::lazy_static;
 
 use crate::error::StatusResult;
 use crate::render::Renderer;
@@ -17,6 +19,65 @@ use crate::tui::get_cursor_position;
 pub fn get_event() -> StatusResult<Event>
 {
     read().or(Err("couldn't read event"))
+}
+
+
+fn remove_from_input(
+    amount: usize,
+    renderer: &mut Renderer,
+    input_text: &mut String,
+    mut cursor_position: Position
+) -> StatusResult<Position>
+{
+    let amount_u16: u16 = amount.try_into().unwrap();
+
+    cursor_position.x -= amount_u16;
+
+    for x in cursor_position.x .. cursor_position.x + amount_u16
+    {
+        renderer.print_at(' ', Position { x, ..cursor_position })?;
+    }
+
+    renderer.move_cursor_to(cursor_position)?;
+
+    input_text.truncate(input_text.len() - amount);
+
+    Ok(cursor_position)
+}
+
+
+fn clear_input(
+    renderer: &mut Renderer,
+    input_text: &mut String,
+    cursor_position: Position
+) -> StatusResult<Position>
+{
+    remove_from_input(input_text.len(), renderer, input_text, cursor_position)
+}
+
+
+fn delete_input_word(
+    renderer: &mut Renderer,
+    input_text: &mut String,
+    cursor_position: Position
+) -> StatusResult<Position>
+{
+    lazy_static! {
+        static ref WORD_START_RE: Regex = Regex::new(r"\W\w+\s*$").unwrap();
+    }
+
+    match WORD_START_RE.find(input_text)
+    {
+        Some(re_match) => {
+            remove_from_input(
+                input_text.len() - re_match.start() - 1,
+                renderer,
+                input_text,
+                cursor_position
+            )
+        },
+        None => clear_input(renderer, input_text, cursor_position)
+    }
 }
 
 
@@ -46,27 +107,19 @@ fn read_string(
                 if event.modifiers.contains(KeyModifiers::CONTROL) => {
                     match character
                     {
-                        'u' => {
-                            let input_length: u16 =
-                                input_text.len().try_into().unwrap();
-
-                            for x in
-                                cursor_position.x - input_length
-                                ..(cursor_position.x)
-                            {
-                                renderer.print_at(
-                                    ' ',
-                                    Position {
-                                        x,
-                                        y: cursor_position.y
-                                    }
-                                )?;
-                            }
-
-                            cursor_position.x -= input_length;
-                            renderer.move_cursor_to(cursor_position)?;
-
-                            input_text.clear();
+                        'u' if !input_text.is_empty() => {
+                            cursor_position = clear_input(
+                                renderer,
+                                &mut input_text,
+                                cursor_position
+                            )?;
+                        },
+                        'w' if !input_text.is_empty() => {
+                            cursor_position = delete_input_word(
+                                renderer,
+                                &mut input_text,
+                                cursor_position
+                            )?;
                         },
                         _ => {}
                     }
