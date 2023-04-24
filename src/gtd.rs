@@ -1,7 +1,11 @@
+use std::time::Instant;
+
+
 pub struct Task
 {
     pub message: String,
-    contexts: Vec<String>
+    contexts: Vec<String>,
+    creation_time: Instant,
 }
 
 
@@ -12,7 +16,8 @@ impl Task
         Task
         {
             message,
-            contexts: Vec::<String>::new()
+            contexts: Vec::<String>::new(),
+            creation_time: Instant::now(),
         }
     }
 
@@ -54,6 +59,9 @@ impl List
     }
 
 
+    pub fn is_empty(&self) -> bool { self.tasks.is_empty() }
+
+
     pub fn tasks(&self) -> &Vec<Task> { &self.tasks }
 
 
@@ -65,6 +73,12 @@ impl List
         self.tasks.push(task);
 
         self
+    }
+
+
+    pub fn remove_task(&mut self, index: usize)
+    {
+        self.tasks.remove(index);
     }
 
 
