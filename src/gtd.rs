@@ -62,10 +62,23 @@ impl List
     pub fn is_empty(&self) -> bool { self.tasks.is_empty() }
 
 
+    pub fn sort<'a>(&mut self, selected_index: usize) -> usize
+    {
+        // FIXME: I dislike these `.clone()`s greatly.
+        let selected_task_message = self.tasks()[selected_index].message.clone();
+        let key_function = |task: &Task| task.message.clone();
+        self.tasks_mut().sort_by_key(key_function);
+        self.tasks().binary_search_by_key(
+            &selected_task_message,
+            key_function
+        ).unwrap()
+    }
+
+
     pub fn tasks(&self) -> &Vec<Task> { &self.tasks }
 
 
-    pub fn mut_tasks(&mut self) -> &mut Vec<Task> { &mut self.tasks }
+    pub fn tasks_mut(&mut self) -> &mut Vec<Task> { &mut self.tasks }
 
 
     pub fn push_task(&mut self, task: Task) -> &mut Self

@@ -53,7 +53,7 @@ fn change_task_name(
         renderer,
         "Change task name",
         "New task name",
-        list_task.message.as_str(),
+        &list_task.message,
         terminal_size
     )?
     {
@@ -121,6 +121,11 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
             match character
             {
                 'q' => { break },
+                'o' if !current_list.is_empty() => {
+                    selected_task_index = current_list.sort(
+                        selected_task_index
+                    );
+                },
                 'j' if selected_task_index < current_list.len() - 1 => {
                     selected_task_index += 1;
                 },
@@ -140,7 +145,7 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                     change_task_name(
                         renderer,
                         terminal_size,
-                        &mut current_list.mut_tasks()[selected_task_index]
+                        &mut current_list.tasks_mut()[selected_task_index]
                     )?;
                 },
                 'd' if !current_list.is_empty() => {

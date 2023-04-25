@@ -176,13 +176,13 @@ impl Renderer
         for _ in 0..(rectangle.size.height() - 2)
         {
             box_str.push_str(
-                Self::make_middle_line(rectangle.size.width()).as_str()
+                &Self::make_middle_line(rectangle.size.width())
             );
             box_str.push('\n');
         }
 
         box_str.push_str(
-            Self::make_bottom_line(rectangle.size.width()).as_str()
+            &Self::make_bottom_line(rectangle.size.width())
         );
 
         self.print(box_str)?;

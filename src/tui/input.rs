@@ -16,6 +16,33 @@ use crate::tui::Position;
 use crate::tui::get_cursor_position;
 
 
+// Confirmation popup draft:
+//
+//
+// ┌─Duplicate Task────────────────┐
+// │                               │
+// │  Would you like to create a   │
+// │  new task instead of          │
+// │  duplicating this one?        │
+// │                               │
+// │ [F] Accept         Refuse [J] │
+// └───────────────────────────────┘
+
+
+// List selection popup draft:
+//
+//
+// ┌─Select an option──────┐
+// │ opt2                  │
+// ├───────────────────────┤
+// │  Option 1             │
+// │▶ Option 2             │
+// │  Option 3             │
+// │  Option 4             │
+// │  Option 5             │
+// └───────────────────────┘
+
+
 pub fn get_event() -> StatusResult<Event>
 {
     read().or(Err("couldn't read event"))
