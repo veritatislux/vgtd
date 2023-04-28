@@ -4,8 +4,9 @@ use std::time::Instant;
 pub struct Task
 {
     pub message: String,
+    pub _details: String,
     contexts: Vec<String>,
-    creation_time: Instant,
+    _creation_time: Instant,
 }
 
 
@@ -16,20 +17,24 @@ impl Task
         Task
         {
             message,
+            _details: String::new(),
             contexts: Vec::<String>::new(),
-            creation_time: Instant::now(),
+            _creation_time: Instant::now(),
         }
     }
 
-
     pub fn contexts(&self) -> &Vec<String> { &self.contexts }
-
 
     pub fn add_context(&mut self, context: String) -> &mut Self
     {
         self.contexts.push(context);
 
         self
+    }
+
+    pub fn set_contexts(&mut self, contexts: Vec<String>)
+    {
+        self.contexts = contexts;
     }
 }
 

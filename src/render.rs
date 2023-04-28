@@ -7,6 +7,7 @@ use crossterm::Command;
 use crossterm::ExecutableCommand;
 use crossterm::QueueableCommand;
 use crossterm::cursor;
+use crossterm::terminal;
 use crossterm::style::Attribute;
 use crossterm::style::Color;
 use crossterm::style::Print;
@@ -80,6 +81,16 @@ impl Renderer
             Ok(_) => Ok(()),
             Err(_) => Err("couldn't flush to stdout")
         }
+    }
+
+    pub fn enter_alternate_screen(&mut self) -> StatusResult<()>
+    {
+        self.execute(terminal::EnterAlternateScreen)
+    }
+
+    pub fn leave_alternate_screen(&mut self) -> StatusResult<()>
+    {
+        self.execute(terminal::LeaveAlternateScreen)
     }
 
     pub fn move_cursor_to(&mut self, position: Position) -> StatusResult<()>

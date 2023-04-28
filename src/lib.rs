@@ -2,11 +2,11 @@ pub mod gtd;
 pub mod tui;
 pub mod render;
 pub mod error;
+pub mod file;
 
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
-use crossterm::terminal;
 
 use error::StatusResult;
 use gtd::List;
@@ -69,7 +69,8 @@ fn change_task_name(
 
 fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
 {
-    let mut lists = Vec::<List>::new();
+    // let mut lists = Vec::<List>::new();
+    let mut lists = file::to_gtd(file::parse(".gtd.toml")?);
 
     lists.push(List::new("Example list".to_string()));
 
@@ -161,27 +162,30 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
 }
 
 
-pub fn run() -> StatusResult<()>
+pub fn start_interactive_mode(renderer: &mut Renderer) -> StatusResult<()>
 {
-    let mut renderer = Renderer::new();
-
-    if let Err(_) = renderer.execute(terminal::EnterAlternateScreen)
-    {
-        return Err("couldn't enter alternate screen");
-    }
-
+    renderer.enter_alternate_screen()?;
     renderer.hide_cursor()?;
 
-    // Process
-    main_loop(&mut renderer)?;
+    main_loop(renderer)?;
 
-    // Teardown
-    if let Err(_) = renderer.execute(terminal::LeaveAlternateScreen) {
-        return Err("couldn't leave alternate screen");
-    }
-
+    renderer.leave_alternate_screen()?;
     renderer.show_cursor()?;
     renderer.flush()?;
 
     Ok(())
+}
+
+
+pub fn run()
+{
+    let mut renderer = Renderer::new();
+
+    if let Err(message) = start_interactive_mode(&mut renderer)
+    {
+        renderer.leave_alternate_screen().ok();
+
+        eprintln!("(VoltGTD) Error: {message}.");
+        std::process::exit(1);
+    }
 }
