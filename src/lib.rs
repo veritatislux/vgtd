@@ -69,22 +69,9 @@ fn change_task_name(
 
 fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
 {
-    // let mut lists = Vec::<List>::new();
-    let mut lists = file::to_gtd(file::parse(".gtd.toml")?);
-
-    lists.push(List::new("Example list".to_string()));
-
-    let current_list: &mut List = &mut lists[0];
-
-    let mut task1 = Task::new("build a map".to_string());
+    let mut lists = file::to_gtd(file::parse_to_file(".gtd.toml")?);
 
     let mut selected_task_index: usize = 0;
-
-    task1
-        .add_context("cartography lounge".to_string())
-        .add_context("Santander workplace".to_string());
-
-    current_list.push_task(task1);
 
     let terminal_size = tui::get_terminal_size()?;
 
@@ -96,7 +83,7 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
     loop
     {
         renderer.draw_list(
-            &current_list,
+            &lists[0],
             list_rectangle,
             selected_task_index
         )?;
@@ -122,12 +109,18 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
             match character
             {
                 'q' => { break },
-                'o' if !current_list.is_empty() => {
-                    selected_task_index = current_list.sort(
+                's' => {
+                    file::write_file(
+                        ".gtd.toml",
+                        file::parse_to_string(file::from_gtd(&lists))?
+                    )?;
+                },
+                'o' if !lists[0].is_empty() => {
+                    selected_task_index = lists[0].sort(
                         selected_task_index
                     );
                 },
-                'j' if selected_task_index < current_list.len() - 1 => {
+                'j' if selected_task_index < lists[0].len() - 1 => {
                     selected_task_index += 1;
                 },
                 'k' if selected_task_index > 0 => {
@@ -137,21 +130,21 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                     add_task_to_list(
                         renderer,
                         terminal_size,
-                        current_list
+                        &mut lists[0]
                     )?;
 
-                    selected_task_index = current_list.len() - 1;
+                    selected_task_index = lists[0].len() - 1;
                 },
-                'c' if !current_list.is_empty() => {
+                'c' if !lists[0].is_empty() => {
                     change_task_name(
                         renderer,
                         terminal_size,
-                        &mut current_list.tasks_mut()[selected_task_index]
+                        &mut lists[0].tasks_mut()[selected_task_index]
                     )?;
                 },
-                'd' if !current_list.is_empty() => {
+                'd' if !lists[0].is_empty() => {
                     // TODO: Add a yes/no input asking for confirmation.
-                    current_list.remove_task(selected_task_index);
+                    lists[0].remove_task(selected_task_index);
                 },
                 _ => {}
             }

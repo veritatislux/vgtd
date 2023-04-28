@@ -1,14 +1,14 @@
-use std::fs::File;
-use std::io::Read;
+use std::fs;
 
 use serde::Deserialize;
+use serde::Serialize;
 
 use crate::error::StatusResult;
 use crate::gtd::List;
 use crate::gtd::Task;
 
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GTDFileTask
 {
     pub name: String,
@@ -17,7 +17,7 @@ pub struct GTDFileTask
 }
 
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GTDFileList
 {
     pub name: String,
@@ -25,7 +25,7 @@ pub struct GTDFileList
 }
 
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GTDFile
 {
     pub lists: Vec<GTDFileList>,
@@ -34,28 +34,41 @@ pub struct GTDFile
 
 pub fn read_file(path: &str) -> StatusResult<String>
 {
-    let mut file = match File::open(path)
+    match fs::read_to_string(path)
     {
-        Ok(file) => file,
-        Err(_) => { return Err("couldn't open file"); }
-    };
-
-    let mut contents = String::new();
-
-    match file.read_to_string(&mut contents)
-    {
-        Ok(_) => Ok(contents),
+        Ok(contents) => Ok(contents),
         Err(_) => Err("couldn't read file contents")
     }
 }
 
 
-pub fn parse(path: &str) -> StatusResult<GTDFile>
+pub fn write_file(path: &str, contents: String) -> StatusResult<()>
+{
+    if let Err(_) = fs::write(path, contents)
+    {
+        return Err("couldn't write file contents")
+    }
+
+    Ok(())
+}
+
+
+pub fn parse_to_file(path: &str) -> StatusResult<GTDFile>
 {
     match toml::from_str::<GTDFile>(&read_file(path)?)
     {
         Ok(value) => Ok(value),
-        Err(_) => Err("couldn't parse file")
+        Err(_) => Err("couldn't parse from file")
+    }
+}
+
+
+pub fn parse_to_string(file: GTDFile) -> StatusResult<String>
+{
+    match toml::to_string_pretty(&file)
+    {
+        Ok(value) => Ok(value),
+        Err(_) => Err("couldn't parse to file")
     }
 }
 
@@ -79,4 +92,31 @@ pub fn to_gtd(file: GTDFile) -> Vec<List>
     }
 
     gtd_lists
+}
+
+
+pub fn from_gtd(lists: &Vec<List>) -> GTDFile
+{
+    let mut gtd_file_lists = Vec::<GTDFileList>::new();
+
+    for list in lists
+    {
+        let mut tasks = Vec::<GTDFileTask>::new();
+
+        for task in list.tasks()
+        {
+            tasks.push(GTDFileTask {
+                name: task.message.clone(),
+                details: task._details.clone(),
+                contexts: task.contexts().clone()
+            });
+        }
+
+        gtd_file_lists.push(GTDFileList {
+            name: list.name.clone(),
+            tasks
+        });
+    }
+
+    GTDFile { lists: gtd_file_lists }
 }
