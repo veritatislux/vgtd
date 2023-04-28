@@ -22,8 +22,12 @@ use crate::gtd::Task;
 use crate::tui::Rectangle;
 use crate::tui::Position;
 use crate::tui::Size;
+use crate::tui::get_terminal_size;
 
 
+// TODO: Make a struct that has these values as fields so different boxes can
+// be drawn using different characters instead of having to change constants
+// all the time.
 const BOX_BOTTOM_LEFT_CHAR: char = '┗';
 const BOX_BOTTOM_RIGHT_CHAR: char = '┛';
 const BOX_HORIZONTAL_CHAR: char = '━';
@@ -123,6 +127,18 @@ impl Renderer
     pub fn show_cursor(&mut self) -> StatusResult<()>
     {
         self.queue(cursor::Show)
+    }
+
+    pub fn make_line(width: u16, character: char) -> String
+    {
+        let mut line = String::with_capacity(width.into());
+
+        for _ in 0..width
+        {
+            line.push(character);
+        }
+
+        line
     }
 
     fn make_bordered_line(
@@ -353,56 +369,104 @@ impl Renderer
         Ok(())
     }
 
-    pub fn draw_input_box(
+    pub fn draw_input_frame(
         &mut self,
-        rectangle: Rectangle
+        input_box_title: &str,
+        request: &str,
+        terminal_size: Size,
     ) -> StatusResult<()>
     {
+        let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
+        let position = Position {
+            x: 0,
+            y: terminal_size.height() - input_box_height
+        };
+        let size = Size::new(terminal_size.width(), input_box_height);
+        let rectangle = Rectangle { position, size };
+
         self.draw_box(rectangle)?;
+
+        self.draw_text_at(
+            input_box_title,
+            Attribute::Reset,
+            Color::Cyan,
+            Color::Reset,
+            Position { x: 2, y: rectangle.position.y }
+        )?;
+
+        self.move_cursor_to(
+            Position {
+                x: INPUT_BOX_HORIZONTAL_PADDING + 1,
+                y: terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
+            }
+        )?;
+
+        self.draw_text(
+            format!("{}: ", request),
+            Attribute::Bold,
+            Color::Yellow,
+            Color::Reset
+        )?;
 
         Ok(())
     }
-}
 
+    pub fn draw_bottom_pad(&mut self, size: u16) -> StatusResult<()>
+    {
+        let terminal_size = get_terminal_size()?;
 
-pub fn draw_input_frame(
-    renderer: &mut Renderer,
-    input_box_title: &str,
-    request: &str,
-    terminal_size: Size,
-) -> StatusResult<()>
-{
-    let input_box_height: u16 = 3 + 2 * INPUT_BOX_VERTICAL_PADDING;
-    let position = Position {
-        x: 0,
-        y: terminal_size.height() - input_box_height
-    };
-    let size = Size::new(terminal_size.width(), input_box_height);
-    let rectangle = Rectangle { position, size };
+        let pad_position = Position {
+            x: 0,
+            y: terminal_size.height() - size - 2
+        };
 
-    renderer.draw_input_box(rectangle)?;
+        self.move_cursor_to(pad_position)?;
 
-    renderer.draw_text_at(
-        input_box_title,
-        Attribute::Reset,
-        Color::Cyan,
-        Color::Reset,
-        Position { x: 2, y: rectangle.position.y }
-    )?;
+        self.print(
+            Self::make_line(
+                terminal_size.width(),
+                BOX_HORIZONTAL_CHAR
+            )
+        )?;
 
-    renderer.move_cursor_to(
-        Position {
-            x: INPUT_BOX_HORIZONTAL_PADDING + 1,
-            y: terminal_size.height() - INPUT_BOX_VERTICAL_PADDING - 2
-        }
-    )?;
+        self.move_cursor_to(
+            Position {
+                y: pad_position.y + 1,
+                ..pad_position
+            }
+        )?;
 
-    renderer.draw_text(
-        format!("{}: ", request),
-        Attribute::Bold,
-        Color::Yellow,
-        Color::Reset
-    )?;
+        self.queue(terminal::Clear(terminal::ClearType::CurrentLine))?;
 
-    Ok(())
+        self.move_cursor_to(
+            Position {
+                y: pad_position.y + 2,
+                ..pad_position
+            }
+        )?;
+
+        self.print(
+            Self::make_line(
+                terminal_size.width(),
+                BOX_HORIZONTAL_CHAR
+            )
+        )?;
+
+        self.move_cursor_to(
+            Position {
+                x: pad_position.x + 2,
+                y: pad_position.y + 1
+            }
+        )?;
+
+        Ok(())
+    }
+
+    pub fn draw_notification(&mut self, message: &str) -> StatusResult<()>
+    {
+        self.draw_bottom_pad(1)?;
+        self.print(message)?;
+
+        Ok(())
+    }
 }

@@ -10,10 +10,9 @@ use lazy_static::lazy_static;
 
 use crate::error::StatusResult;
 use crate::render::Renderer;
-use crate::render::draw_input_frame;
-use crate::tui::Size;
 use crate::tui::Position;
 use crate::tui::get_cursor_position;
+use crate::tui::get_terminal_size;
 
 
 // Confirmation popup draft:
@@ -198,11 +197,9 @@ pub fn get_string(
     renderer: &mut Renderer,
     input_box_title: &str,
     request: &str,
-    terminal_size: Size,
 ) -> StatusResult<Option<String>>
 {
-    draw_input_frame(renderer, input_box_title, request, terminal_size)?;
-
+    renderer.draw_input_frame(input_box_title, request, get_terminal_size()?)?;
     renderer.flush()?;
 
     let result = read_string(renderer, String::new());
@@ -216,10 +213,9 @@ pub fn get_string_with_preview(
     input_box_title: &str,
     request: &str,
     preview_text: &str,
-    terminal_size: Size,
 ) -> StatusResult<Option<String>>
 {
-    draw_input_frame(renderer, input_box_title, request, terminal_size)?;
+    renderer.draw_input_frame(input_box_title, request, get_terminal_size()?)?;
 
     renderer.draw_text(
         preview_text,
@@ -233,4 +229,24 @@ pub fn get_string_with_preview(
     let result = read_string(renderer, preview_text.to_string());
 
     result
+}
+
+
+pub fn notify(renderer: &mut Renderer, message: &str) -> StatusResult<()>
+{
+    renderer.draw_notification(message)?;
+    renderer.flush()?;
+
+    loop
+    {
+        if let Event::Key(event) = get_event()?
+        {
+            if event.kind == KeyEventKind::Press
+            {
+                break;
+            }
+        }
+    }
+
+    Ok(())
 }

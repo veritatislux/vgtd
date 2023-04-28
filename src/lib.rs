@@ -14,13 +14,11 @@ use gtd::Task;
 use render::Renderer;
 use tui::Position;
 use tui::Rectangle;
-use tui::Size;
 use tui::input;
 
 
 fn add_task_to_list(
     renderer: &mut Renderer,
-    terminal_size: Size,
     list: &mut List
 ) -> StatusResult<()>
 {
@@ -28,7 +26,6 @@ fn add_task_to_list(
         renderer,
         "Create new task",
         "Task name",
-        terminal_size,
     )?
     {
         None => { return Ok(()); },
@@ -45,7 +42,6 @@ fn add_task_to_list(
 
 fn change_task_name(
     renderer: &mut Renderer,
-    terminal_size: Size,
     list_task: &mut Task
 ) -> StatusResult<()>
 {
@@ -54,7 +50,6 @@ fn change_task_name(
         "Change task name",
         "New task name",
         &list_task.message,
-        terminal_size
     )?
     {
         None => { return Ok(()); },
@@ -73,11 +68,9 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
 
     let mut selected_task_index: usize = 0;
 
-    let terminal_size = tui::get_terminal_size()?;
-
     let list_rectangle = Rectangle {
         position: Position { x: 0, y: 0 },
-        size: terminal_size
+        size: tui::get_terminal_size()?
     };
 
     loop
@@ -114,6 +107,8 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                         ".gtd.toml",
                         file::parse_to_string(file::from_gtd(&lists))?
                     )?;
+
+                    input::notify(renderer, "File saved to '.gtd.toml'.")?;
                 },
                 'o' if !lists[0].is_empty() => {
                     selected_task_index = lists[0].sort(
@@ -129,7 +124,6 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                 'a' => {
                     add_task_to_list(
                         renderer,
-                        terminal_size,
                         &mut lists[0]
                     )?;
 
@@ -138,7 +132,6 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                 'c' if !lists[0].is_empty() => {
                     change_task_name(
                         renderer,
-                        terminal_size,
                         &mut lists[0].tasks_mut()[selected_task_index]
                     )?;
                 },
