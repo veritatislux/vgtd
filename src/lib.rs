@@ -138,6 +138,11 @@ fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
                 'd' if !lists[0].is_empty() => {
                     // TODO: Add a yes/no input asking for confirmation.
                     lists[0].remove_task(selected_task_index);
+
+                    if selected_task_index > lists[0].len() - 1
+                    {
+                        selected_task_index -= 1;
+                    }
                 },
                 _ => {}
             }
