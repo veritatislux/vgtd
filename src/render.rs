@@ -102,6 +102,36 @@ impl Renderer
         self.queue(cursor::MoveTo(position.x, position.y))
     }
 
+    pub fn clear(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::All))
+    }
+
+    pub fn purge(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::Purge))
+    }
+
+    pub fn clear_current_line(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::CurrentLine))
+    }
+
+    pub fn clear_downwards(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::FromCursorDown))
+    }
+
+    pub fn clear_upwards(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::FromCursorUp))
+    }
+
+    pub fn clear_to_end_of_line(&mut self) -> StatusResult<()>
+    {
+        self.queue(terminal::Clear(terminal::ClearType::UntilNewLine))
+    }
+
     pub fn print<T: Display>(&mut self, text: T) -> StatusResult<()>
     {
         self.queue(Print(text))

@@ -507,7 +507,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "voltgtd"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "clap",
  "crossterm",
