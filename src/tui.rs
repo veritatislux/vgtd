@@ -223,3 +223,53 @@ pub trait VisualItem
         self.draw_children(item_position);
     }
 }
+
+
+pub struct VisualContainer
+{
+    offset: Offset,
+    children: Vec<Box<dyn VisualItem>>,
+}
+
+
+impl VisualContainer
+{
+    pub fn new() -> Self
+    {
+        Self {
+            offset: Offset::new_zero(),
+            children: vec![]
+        }
+    }
+}
+
+
+impl VisualItem for VisualContainer
+{
+    fn offset(&self) -> Offset
+    {
+        self.offset
+    }
+
+    fn set_offset(&mut self, new_offset: Offset)
+    {
+        self.offset = new_offset;
+    }
+
+    fn children(&self) -> &Vec<Box<dyn VisualItem>>
+    {
+        &self.children
+    }
+
+    fn children_mut(&mut self) -> &mut Vec<Box<dyn VisualItem>>
+    {
+        &mut self.children
+    }
+
+    fn add_child(&mut self, new_child: Box<dyn VisualItem>)
+    {
+        self.children.push(new_child);
+    }
+
+    fn draw_self(&self, position: Position) {}
+}
