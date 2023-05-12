@@ -7,11 +7,52 @@ use crossterm::terminal;
 use crate::error::StatusResult;
 
 
+pub type Coord = u16;
+pub type CoordOffset = i16;
+
+
+fn offset_axis(value: Coord, offset: CoordOffset) -> u16
+{
+    u16::try_from(i32::from(value) + i32::from(offset)).unwrap()
+}
+
+
+#[derive(Copy)]
+pub struct Offset
+{
+    pub x: CoordOffset,
+    pub y: CoordOffset
+}
+
+
+impl Clone for Offset
+{
+    fn clone(&self) -> Self
+    {
+        Self { ..*self }
+    }
+}
+
+
+impl Offset
+{
+    pub fn new(x: CoordOffset, y: CoordOffset) -> Self
+    {
+        Self { x, y }
+    }
+
+    pub fn new_zero() -> Self
+    {
+        Self::new(0, 0)
+    }
+}
+
+
 #[derive(Copy)]
 pub struct Position
 {
-    pub x: u16,
-    pub y: u16,
+    pub x: Coord,
+    pub y: Coord,
 }
 
 
@@ -19,19 +60,29 @@ impl Clone for Position
 {
     fn clone(&self) -> Self
     {
-        Self {
-            x: self.x,
-            y: self.y
-        }
+        Self { ..*self }
     }
 }
 
 
 impl Position
 {
-    pub fn new() -> Self
+    pub fn new(x: Coord, y: Coord) -> Self
     {
-        Self { x: 0, y: 0 }
+        Self { x, y }
+    }
+
+    pub fn new_zero() -> Self
+    {
+        Self::new(0, 0)
+    }
+
+    pub fn offset_by(&mut self, offset: Offset) -> Self
+    {
+        self.x = offset_axis(self.x, offset.x);
+        self.y = offset_axis(self.y, offset.y);
+
+        *self
     }
 }
 
@@ -39,14 +90,14 @@ impl Position
 #[derive(Copy)]
 pub struct Size
 {
-    width: u16,
-    height: u16,
+    width: Coord,
+    height: Coord,
 }
 
 
 impl Size
 {
-    pub fn new(width: u16, height: u16) -> Self
+    pub fn new(width: Coord, height: Coord) -> Self
     {
         let mut instance = Self { width: 0, height: 0 };
 
@@ -57,10 +108,10 @@ impl Size
     }
 
 
-    pub fn width(&self) -> u16 { self.width }
+    pub fn width(&self) -> Coord { self.width }
 
 
-    pub fn set_width(&mut self, value: u16)
+    pub fn set_width(&mut self, value: Coord)
     {
         if value < 1
         {
@@ -71,10 +122,10 @@ impl Size
     }
 
 
-    pub fn height(&self) -> u16 { self.height }
+    pub fn height(&self) -> Coord { self.height }
 
 
-    pub fn set_height(&mut self, value: u16)
+    pub fn set_height(&mut self, value: Coord)
     {
         if value < 1
         {
@@ -87,10 +138,7 @@ impl Size
 
     pub fn clone(&self) -> Self
     {
-        Self {
-            width: self.width,
-            height: self.height
-        }
+        Self { ..*self }
     }
 }
 
@@ -99,10 +147,7 @@ impl Clone for Size
 {
     fn clone(&self) -> Self
     {
-        Self {
-            width: self.width,
-            height: self.height
-        }
+        Self { ..*self }
     }
 }
 
@@ -119,10 +164,7 @@ impl Clone for Rectangle
 {
     fn clone(&self) -> Self
     {
-        Self {
-            position: self.position,
-            size: self.size
-        }
+        Self { ..*self }
     }
 }
 
@@ -148,4 +190,36 @@ pub fn get_terminal_size() -> StatusResult<Size>
     };
 
     Ok(Size::new(terminal_width, terminal_height))
+}
+
+
+pub trait VisualItem
+{
+    fn offset(&self) -> Offset;
+
+    fn set_offset(&mut self, new_offset: Offset);
+
+    fn children(&self) -> &Vec<Box<dyn VisualItem>>;
+
+    fn children_mut(&mut self) -> &mut Vec<Box<dyn VisualItem>>;
+
+    fn add_child(&mut self, new_child: Box<dyn VisualItem>);
+
+    fn draw_self(&self, position: Position);
+
+    fn draw_children(&self, position: Position)
+    {
+        for child in self.children()
+        {
+            child.draw(position)
+        }
+    }
+
+    fn draw(&self, mut position: Position)
+    {
+        let item_position = position.offset_by(self.offset());
+
+        self.draw_self(item_position);
+        self.draw_children(item_position);
+    }
 }
