@@ -45,6 +45,12 @@ impl Offset
     {
         Self::new(0, 0)
     }
+
+    pub fn add(&mut self, x: CoordOffset, y: CoordOffset)
+    {
+        self.x += x;
+        self.y += y;
+    }
 }
 
 
@@ -77,12 +83,10 @@ impl Position
         Self::new(0, 0)
     }
 
-    pub fn offset_by(&mut self, offset: Offset) -> Self
+    pub fn offset_by(&mut self, offset: Offset)
     {
         self.x = offset_axis(self.x, offset.x);
         self.y = offset_axis(self.y, offset.y);
-
-        *self
     }
 }
 
@@ -107,9 +111,7 @@ impl Size
         instance
     }
 
-
     pub fn width(&self) -> Coord { self.width }
-
 
     pub fn set_width(&mut self, value: Coord)
     {
@@ -121,9 +123,7 @@ impl Size
         self.width = value;
     }
 
-
     pub fn height(&self) -> Coord { self.height }
-
 
     pub fn set_height(&mut self, value: Coord)
     {
@@ -135,10 +135,10 @@ impl Size
         self.height = value;
     }
 
-
-    pub fn clone(&self) -> Self
+    pub fn offset_by(&mut self, offset: Offset)
     {
-        Self { ..*self }
+        self.width = offset_axis(self.width, offset.x);
+        self.height = offset_axis(self.height, offset.y);
     }
 }
 
@@ -195,9 +195,17 @@ pub fn get_terminal_size() -> StatusResult<Size>
 
 pub trait VisualItem
 {
-    fn offset(&self) -> Offset;
+    fn position_offset(&self) -> Offset;
 
-    fn set_offset(&mut self, new_offset: Offset);
+    fn position_offset_mut(&mut self) -> &mut Offset;
+
+    fn set_position_offset(&mut self, new_offset: Offset);
+
+    fn size_offset(&self) -> Offset;
+
+    fn size_offset_mut(&mut self) -> &mut Offset;
+
+    fn set_size_offset(&mut self, new_offset: Offset);
 
     fn children(&self) -> &Vec<Box<dyn VisualItem>>;
 
@@ -208,29 +216,31 @@ pub trait VisualItem
         self.children_mut().push(new_child);
     }
 
-    fn draw_self(&self, position: Position);
+    fn draw_self(&self, rectangle: Rectangle);
 
-    fn draw_children(&self, position: Position)
+    fn draw_children(&self, rectangle: Rectangle)
     {
         for child in self.children()
         {
-            child.draw(position)
+            child.draw(rectangle)
         }
     }
 
-    fn draw(&self, mut position: Position)
+    fn draw(&self, mut rectangle: Rectangle)
     {
-        let item_position = position.offset_by(self.offset());
+        rectangle.position.offset_by(self.position_offset());
+        rectangle.size.offset_by(self.size_offset());
 
-        self.draw_self(item_position);
-        self.draw_children(item_position);
+        self.draw_self(rectangle);
+        self.draw_children(rectangle);
     }
 }
 
 
 pub struct VisualContainer
 {
-    offset: Offset,
+    position_offset: Offset,
+    size_offset: Offset,
     children: Vec<Box<dyn VisualItem>>,
 }
 
@@ -240,7 +250,8 @@ impl VisualContainer
     pub fn new() -> Self
     {
         Self {
-            offset: Offset::new_zero(),
+            position_offset: Offset::new_zero(),
+            size_offset: Offset::new_zero(),
             children: vec![]
         }
     }
@@ -249,14 +260,34 @@ impl VisualContainer
 
 impl VisualItem for VisualContainer
 {
-    fn offset(&self) -> Offset
+    fn position_offset(&self) -> Offset
     {
-        self.offset
+        self.position_offset
     }
 
-    fn set_offset(&mut self, new_offset: Offset)
+    fn position_offset_mut(&mut self) -> &mut Offset
     {
-        self.offset = new_offset;
+        &mut self.position_offset
+    }
+
+    fn set_position_offset(&mut self, new_offset: Offset)
+    {
+        self.position_offset = new_offset;
+    }
+
+    fn size_offset(&self) -> Offset
+    {
+        self.size_offset
+    }
+
+    fn size_offset_mut(&mut self) -> &mut Offset
+    {
+        &mut self.size_offset
+    }
+
+    fn set_size_offset(&mut self, new_offset: Offset)
+    {
+        self.size_offset = new_offset;
     }
 
     fn children(&self) -> &Vec<Box<dyn VisualItem>>
@@ -269,5 +300,5 @@ impl VisualItem for VisualContainer
         &mut self.children
     }
 
-    fn draw_self(&self, _position: Position) {}
+    fn draw_self(&self, _rectangle: Rectangle) {}
 }
