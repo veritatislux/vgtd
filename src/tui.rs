@@ -203,7 +203,10 @@ pub trait VisualItem
 
     fn children_mut(&mut self) -> &mut Vec<Box<dyn VisualItem>>;
 
-    fn add_child(&mut self, new_child: Box<dyn VisualItem>);
+    fn add_child(&mut self, new_child: Box<dyn VisualItem>)
+    {
+        self.children_mut().push(new_child);
+    }
 
     fn draw_self(&self, position: Position);
 
@@ -266,10 +269,5 @@ impl VisualItem for VisualContainer
         &mut self.children
     }
 
-    fn add_child(&mut self, new_child: Box<dyn VisualItem>)
-    {
-        self.children.push(new_child);
-    }
-
-    fn draw_self(&self, position: Position) {}
+    fn draw_self(&self, _position: Position) {}
 }
