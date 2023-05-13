@@ -55,6 +55,71 @@ impl Offset
 
 
 #[derive(Copy)]
+pub struct VisualOffset
+{
+    position: Offset,
+    size: Offset,
+}
+
+
+impl Clone for VisualOffset
+{
+    fn clone(&self) -> Self
+    {
+        Self { ..*self }
+    }
+}
+
+
+impl VisualOffset
+{
+    pub fn new(position: Offset, size: Offset) -> Self
+    {
+        Self { position, size }
+    }
+
+    pub fn new_zero() -> Self
+    {
+        Self
+        {
+            position: Offset::new_zero(),
+            size: Offset::new_zero(),
+        }
+    }
+
+    pub fn position(&self) -> Offset
+    {
+        self.position
+    }
+
+    pub fn position_mut(&mut self) -> &mut Offset
+    {
+        &mut self.position
+    }
+
+    pub fn set_position(&mut self, new_offset: Offset)
+    {
+        self.position = new_offset
+    }
+
+    pub fn size(&self) -> Offset
+    {
+        self.size
+    }
+
+    pub fn size_mut(&mut self) -> &mut Offset
+    {
+        &mut self.size
+    }
+
+    pub fn set_size(&mut self, new_offset: Offset)
+    {
+        self.size = new_offset
+    }
+}
+
+
+#[derive(Copy)]
 pub struct Position
 {
     pub x: Coord,
@@ -160,6 +225,16 @@ pub struct Rectangle
 }
 
 
+impl Rectangle
+{
+    pub fn offset_by(&mut self, offset: VisualOffset)
+    {
+        self.position.offset_by(offset.position());
+        self.size.offset_by(offset.size());
+    }
+}
+
+
 impl Clone for Rectangle
 {
     fn clone(&self) -> Self
@@ -195,17 +270,9 @@ pub fn get_terminal_size() -> StatusResult<Size>
 
 pub trait VisualItem
 {
-    fn position_offset(&self) -> Offset;
+    fn visual_offset(&self) -> VisualOffset;
 
-    fn position_offset_mut(&mut self) -> &mut Offset;
-
-    fn set_position_offset(&mut self, new_offset: Offset);
-
-    fn size_offset(&self) -> Offset;
-
-    fn size_offset_mut(&mut self) -> &mut Offset;
-
-    fn set_size_offset(&mut self, new_offset: Offset);
+    fn visual_offset_mut(&mut self) -> &mut VisualOffset;
 
     fn children(&self) -> &Vec<Box<dyn VisualItem>>;
 
@@ -228,8 +295,7 @@ pub trait VisualItem
 
     fn draw(&self, mut rectangle: Rectangle)
     {
-        rectangle.position.offset_by(self.position_offset());
-        rectangle.size.offset_by(self.size_offset());
+        rectangle.offset_by(self.visual_offset());
 
         self.draw_self(rectangle);
         self.draw_children(rectangle);
@@ -239,8 +305,7 @@ pub trait VisualItem
 
 pub struct VisualContainer
 {
-    position_offset: Offset,
-    size_offset: Offset,
+    visual_offset: VisualOffset,
     children: Vec<Box<dyn VisualItem>>,
 }
 
@@ -250,8 +315,7 @@ impl VisualContainer
     pub fn new() -> Self
     {
         Self {
-            position_offset: Offset::new_zero(),
-            size_offset: Offset::new_zero(),
+            visual_offset: VisualOffset::new_zero(),
             children: vec![]
         }
     }
@@ -260,34 +324,14 @@ impl VisualContainer
 
 impl VisualItem for VisualContainer
 {
-    fn position_offset(&self) -> Offset
+    fn visual_offset(&self) -> VisualOffset
     {
-        self.position_offset
+        self.visual_offset
     }
 
-    fn position_offset_mut(&mut self) -> &mut Offset
+    fn visual_offset_mut(&mut self) -> &mut VisualOffset
     {
-        &mut self.position_offset
-    }
-
-    fn set_position_offset(&mut self, new_offset: Offset)
-    {
-        self.position_offset = new_offset;
-    }
-
-    fn size_offset(&self) -> Offset
-    {
-        self.size_offset
-    }
-
-    fn size_offset_mut(&mut self) -> &mut Offset
-    {
-        &mut self.size_offset
-    }
-
-    fn set_size_offset(&mut self, new_offset: Offset)
-    {
-        self.size_offset = new_offset;
+        &mut self.visual_offset
     }
 
     fn children(&self) -> &Vec<Box<dyn VisualItem>>
