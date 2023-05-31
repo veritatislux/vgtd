@@ -1,182 +1,329 @@
-pub mod gtd;
-pub mod tui;
-pub mod render;
-pub mod error;
-pub mod file;
+mod file;
+mod gtd;
 
-use crossterm::event::Event;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEventKind;
+use std::error::Error;
+use std::io;
+use std::io::ErrorKind;
+use std::path;
 
-use error::StatusResult;
+use clap::Parser;
+use clap::Subcommand;
 use gtd::List;
-use gtd::Task;
-use render::Renderer;
-use tui::Position;
-use tui::Rectangle;
-use tui::input;
 
+use crate::gtd::Task;
 
-fn add_task_to_list(
-    renderer: &mut Renderer,
-    list: &mut List
-) -> StatusResult<()>
+pub type EResult<T> = Result<T, Box<dyn Error>>;
+
+const GTD_FILE_PATH: &str = ".gtd.toml";
+
+/// Commands to deal with projects
+#[derive(Subcommand)]
+pub enum ProjectSubcommand
 {
-    let task_name: String = match input::get_string(
-        renderer,
-        "Create new task",
-        "Task name",
-    )?
+    /// Create a project
+    Create
     {
-        None => { return Ok(()); },
-        Some(name) => name
+        /// The list where the project will be created
+        list: String,
+        /// The new project's name
+        name: String,
+    },
+
+    /// Remove a project
+    Remove
+    {
+        /// The list where the project is
+        list: String,
+        /// The name of the project to be removed
+        project: String,
+    },
+}
+
+/// Commands to deal with lists
+#[derive(Subcommand)]
+pub enum ListSubcommand
+{
+    /// Create a list
+    Create
+    {
+        /// The new list's name
+        name: String,
+    },
+
+    /// Remove a list
+    Remove
+    {
+        /// The name of the list to be removed
+        list: String,
+    },
+
+    /// Show the contents of a list
+    Show
+    {
+        /// The name of the list to show the contents of
+        list: String,
+    },
+}
+
+/// Commands to deal with tasks
+#[derive(Subcommand)]
+pub enum TaskSubcommand
+{
+    /// Create a task
+    Create
+    {
+        /// The list path where the task will be created
+        list: String,
+        /// The task's name
+        name: String,
+        /// The task's description
+        description: Option<String>,
+    },
+
+    /// Remove a task
+    Remove
+    {
+        /// The list path where the task is
+        list: String,
+        /// The task's name
+        task: String,
+    },
+
+    /// Move a task from one list to the other
+    Move
+    {
+        /// The list path where the task is
+        list: String,
+        /// The task's name
+        task: String,
+        /// The list path to move the task to
+        new_list: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum GTDSubcommand
+{
+    Task
+    {
+        #[command(subcommand)]
+        sub: TaskSubcommand,
+    },
+    List
+    {
+        #[command(subcommand)]
+        sub: ListSubcommand,
+    },
+
+    /// Initialize a new VoltGTD project (create .gtd.toml file)
+    Init,
+
+    /// Reset an existing VoltGTD project
+    Reset,
+
+    /// Show all the lists in the VoltGTD project
+    Lists,
+}
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub struct Args
+{
+    #[command(subcommand)]
+    sub: GTDSubcommand,
+}
+
+pub fn write_project_defaults() -> EResult<()>
+{
+    let basic_structure = gtd::File {
+        lists: vec![
+            gtd::List {
+                name: "Inbox".to_owned(),
+                tasks: vec![],
+                projects: vec![],
+            },
+            gtd::List {
+                name: "Next".to_owned(),
+                tasks: vec![],
+                projects: vec![],
+            },
+            gtd::List {
+                name: "Done".to_owned(),
+                tasks: vec![],
+                projects: vec![],
+            },
+        ],
     };
 
-    let task = Task::new(task_name);
-
-    list.push_task(task);
+    basic_structure.write_to_file(GTD_FILE_PATH)?;
 
     Ok(())
 }
 
-
-fn change_task_name(
-    renderer: &mut Renderer,
-    list_task: &mut Task
-) -> StatusResult<()>
+pub fn reset_project() -> EResult<()>
 {
-    let new_task_name: String = match input::get_string_with_preview(
-        renderer,
-        "Change task name",
-        "New task name",
-        &list_task.message,
-    )?
+    if !path::Path::new(GTD_FILE_PATH).exists()
     {
-        None => { return Ok(()); },
-        Some(new_name) => new_name
-    };
+        return Err(Box::new(io::Error::new(
+            ErrorKind::NotFound,
+            "Project not found.",
+        )));
+    }
 
-    list_task.message = new_task_name;
+    write_project_defaults()?;
 
+    println!("The project has been reset.");
     Ok(())
 }
 
-
-fn main_loop(renderer: &mut Renderer) -> StatusResult<()>
+pub fn init_project() -> EResult<()>
 {
-    let mut lists = file::to_gtd(file::parse_to_file(".gtd.toml")?);
+    if path::Path::new(GTD_FILE_PATH).exists()
+    {
+        return Err(Box::new(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "Project already exists.",
+        )));
+    }
 
-    let mut selected_task_index: usize = 0;
+    write_project_defaults()?;
 
-    let list_rectangle = Rectangle {
-        position: Position { x: 0, y: 0 },
-        size: tui::get_terminal_size()?
+    println!("Project initialized.");
+    Ok(())
+}
+
+pub fn create_task(
+    file: &mut gtd::File,
+    list_name: String,
+    name: String,
+    description: Option<String>,
+) -> EResult<()>
+{
+    let list = match file.get_list(&list_name)
+    {
+        Some(list) => list,
+        None =>
+        {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "List not found.",
+            )));
+        }
     };
 
-    loop
+    if let Some(_) = list.get_task(&name)
     {
-        renderer.draw_list(
-            &lists[0],
-            list_rectangle,
-            selected_task_index
-        )?;
+        return Err(Box::new(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "Task already exists.",
+        )));
+    }
 
-        renderer.flush()?;
+    let task = Task {
+        name: name.clone(),
+        description: description.unwrap_or(String::new()),
+    };
 
-        let key_event = if let Event::Key(event) = input::get_event()?
+    list.tasks.push(task);
+
+    println!("Task {list_name}/{name} created succesfully.");
+    Ok(())
+}
+
+pub fn create_list(file: &mut gtd::File, name: String) -> EResult<()>
+{
+    let list = List::new(name.clone());
+
+    file.lists.push(list);
+
+    println!("List {name} created succesfully.");
+    Ok(())
+}
+
+pub fn show_list(file: &mut gtd::File, name: String) -> EResult<()>
+{
+    let list = match file.get_list(&name)
+    {
+        Some(list) => list,
+        None =>
         {
-            if event.kind != KeyEventKind::Press
-            {
-                continue;
-            }
-
-            event
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "List not found.",
+            )));
         }
-        else
-        {
-            continue;
-        };
+    };
 
-        if let KeyCode::Char(character) = key_event.code
-        {
-            match character
-            {
-                'q' => { break },
-                's' => {
-                    file::write_file(
-                        ".gtd.toml",
-                        file::parse_to_string(file::from_gtd(&lists))?
-                    )?;
+    println!("List {name}'s contents:");
 
-                    input::notify(renderer, "File saved to '.gtd.toml'.")?;
-                },
-                'o' if !lists[0].is_empty() => {
-                    selected_task_index = lists[0].sort(
-                        selected_task_index
-                    );
-                },
-                'j' if selected_task_index < lists[0].len() - 1 => {
-                    selected_task_index += 1;
-                },
-                'k' if selected_task_index > 0 => {
-                    selected_task_index -= 1;
-                },
-                'a' => {
-                    add_task_to_list(
-                        renderer,
-                        &mut lists[0]
-                    )?;
-
-                    selected_task_index = lists[0].len() - 1;
-                },
-                'c' if !lists[0].is_empty() => {
-                    change_task_name(
-                        renderer,
-                        &mut lists[0].tasks_mut()[selected_task_index]
-                    )?;
-                },
-                'd' if !lists[0].is_empty() => {
-                    // TODO: Add a yes/no input asking for confirmation.
-                    lists[0].remove_task(selected_task_index);
-
-                    if selected_task_index > lists[0].len() - 1
-                    {
-                        selected_task_index -= 1;
-                    }
-                },
-                _ => {}
-            }
-        }
+    for task in list.tasks.iter_mut()
+    {
+        println!("- {}", task.name);
     }
 
     Ok(())
 }
 
-
-pub fn start_interactive_mode(renderer: &mut Renderer) -> StatusResult<()>
+pub fn show_all_lists(file: &mut gtd::File) -> EResult<()>
 {
-    renderer.enter_alternate_screen()?;
-    renderer.hide_cursor()?;
+    println!("Lists in the current VoltGTD project:");
 
-    main_loop(renderer)?;
-
-    renderer.leave_alternate_screen()?;
-    renderer.show_cursor()?;
-    renderer.flush()?;
+    for list in file.lists.iter_mut()
+    {
+        println!("- {}", list.name);
+    }
 
     Ok(())
 }
 
-
-pub fn run()
+pub fn parse_cli_arguments() -> EResult<()>
 {
-    let mut renderer = Renderer::new();
+    let args = Args::parse();
 
-    if let Err(message) = start_interactive_mode(&mut renderer)
+    if let GTDSubcommand::Init = args.sub
     {
-        renderer.leave_alternate_screen().ok();
-
-        eprintln!("(VoltGTD) Error: {message}.");
-        std::process::exit(1);
+        return init_project();
     }
+
+    if let GTDSubcommand::Reset = args.sub
+    {
+        return reset_project();
+    }
+
+    let mut file = file::parse(GTD_FILE_PATH)?;
+
+    match args.sub
+    {
+        GTDSubcommand::Task { sub } =>
+        {
+            match sub
+            {
+                TaskSubcommand::Create {
+                    list,
+                    name,
+                    description,
+                } => create_task(&mut file, list, name, description)?,
+                _ =>
+                {}
+            }
+        }
+        GTDSubcommand::List { sub } =>
+        {
+            match sub
+            {
+                ListSubcommand::Create { name } =>
+                {
+                    create_list(&mut file, name)?
+                }
+                ListSubcommand::Show { list } => show_list(&mut file, list)?,
+                _ =>
+                {}
+            }
+        }
+        GTDSubcommand::Lists => show_all_lists(&mut file)?,
+        _ =>
+        {}
+    };
+
+    file.write_to_file(GTD_FILE_PATH)
 }

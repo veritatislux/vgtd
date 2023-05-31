@@ -1,107 +1,81 @@
-use std::time::Instant;
+use std::fs;
 
+use serde::Deserialize;
+use serde::Serialize;
 
+use crate::EResult;
+
+#[derive(Serialize, Deserialize)]
 pub struct Task
 {
-    pub message: String,
-    pub _details: String,
-    contexts: Vec<String>,
-    _creation_time: Instant,
+    pub name: String,
+    pub description: String,
 }
 
-
-impl Task
+#[derive(Serialize, Deserialize)]
+pub struct Project
 {
-    pub fn new(message: String) -> Self
-    {
-        Task
-        {
-            message,
-            _details: String::new(),
-            contexts: Vec::<String>::new(),
-            _creation_time: Instant::now(),
-        }
-    }
-
-    pub fn contexts(&self) -> &Vec<String> { &self.contexts }
-
-    pub fn add_context(&mut self, context: String) -> &mut Self
-    {
-        self.contexts.push(context);
-
-        self
-    }
-
-    pub fn set_contexts(&mut self, contexts: Vec<String>)
-    {
-        self.contexts = contexts;
-    }
+    pub name: String,
+    pub tasks: Vec<Task>,
 }
 
-
+#[derive(Serialize, Deserialize)]
 pub struct List
 {
     pub name: String,
-    tasks: Vec<Task>,
+    pub tasks: Vec<Task>,
+    pub projects: Vec<Project>,
 }
 
+impl List
+{
+    pub fn get_task(&mut self, name: &str) -> Option<&mut Task>
+    {
+        self.tasks.iter_mut().find(|task| task.name == name)
+    }
+
+    pub fn get_project(&mut self, name: &str) -> Option<&mut Project>
+    {
+        self.projects
+            .iter_mut()
+            .find(|project| project.name == name)
+    }
+}
 
 impl List
 {
     pub fn new(name: String) -> Self
     {
-        List
-        {
+        Self {
             name,
-            tasks: Vec::<Task>::new(),
+            tasks: vec![],
+            projects: vec![],
         }
     }
+}
 
+#[derive(Serialize, Deserialize)]
+pub struct File
+{
+    pub lists: Vec<List>,
+}
 
-    pub fn len(&self) -> usize
+impl File
+{
+    pub fn get_list(&mut self, name: &str) -> Option<&mut List>
     {
-        self.tasks().len()
+        self.lists.iter_mut().find(|list| list.name == name)
     }
 
-
-    pub fn is_empty(&self) -> bool { self.tasks.is_empty() }
-
-
-    pub fn sort<'a>(&mut self, selected_index: usize) -> usize
+    pub fn write_to_file(&self, path: &str) -> EResult<()>
     {
-        // FIXME: I dislike these `.clone()`s greatly.
-        let selected_task_message = self.tasks()[selected_index].message.clone();
-        let key_function = |task: &Task| task.message.clone();
-        self.tasks_mut().sort_by_key(key_function);
-        self.tasks().binary_search_by_key(
-            &selected_task_message,
-            key_function
-        ).unwrap()
-    }
+        let contents = toml::to_string(self)?;
 
+        if let Err(error) = fs::write(path, contents)
+        {
+            return Err(Box::new(error));
+        }
 
-    pub fn tasks(&self) -> &Vec<Task> { &self.tasks }
-
-
-    pub fn tasks_mut(&mut self) -> &mut Vec<Task> { &mut self.tasks }
-
-
-    pub fn push_task(&mut self, task: Task) -> &mut Self
-    {
-        self.tasks.push(task);
-
-        self
-    }
-
-
-    pub fn remove_task(&mut self, index: usize)
-    {
-        self.tasks.remove(index);
-    }
-
-
-    pub fn move_task(&mut self, index: usize, target_list: &mut List)
-    {
-        target_list.tasks.push(self.tasks.remove(index));
+        Ok(())
     }
 }
