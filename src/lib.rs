@@ -1,5 +1,6 @@
 mod file;
 mod gtd;
+mod indexer;
 
 use std::error::Error;
 use std::io;
@@ -9,8 +10,9 @@ use std::path;
 use clap::Parser;
 use clap::Subcommand;
 use gtd::List;
-
-use crate::gtd::Task;
+use gtd::File;
+use gtd::Project;
+use gtd::Task;
 
 pub type EResult<T> = Result<T, Box<dyn Error>>;
 
@@ -23,16 +25,16 @@ pub enum ProjectSubcommand
     /// Create a project
     Create
     {
-        /// The list where the project will be created
+        /// The list path where the project will be created
         list: String,
-        /// The new project's name
+        /// The project's name
         name: String,
     },
 
     /// Remove a project
     Remove
     {
-        /// The list where the project is
+        /// The list path where the project is
         list: String,
         /// The name of the project to be removed
         project: String,
@@ -85,8 +87,8 @@ pub enum TaskSubcommand
     {
         /// The list path where the task is
         list: String,
-        /// The task's name
-        task: String,
+        /// The task's identifier
+        identifier: String,
     },
 
     /// Move a task from one list to the other
@@ -94,8 +96,8 @@ pub enum TaskSubcommand
     {
         /// The list path where the task is
         list: String,
-        /// The task's name
-        task: String,
+        /// The task's identifier
+        identifier: String,
         /// The list path to move the task to
         new_list: String,
     },
@@ -109,10 +111,17 @@ pub enum GTDSubcommand
         #[command(subcommand)]
         sub: TaskSubcommand,
     },
+
     List
     {
         #[command(subcommand)]
         sub: ListSubcommand,
+    },
+
+    Project
+    {
+        #[command(subcommand)]
+        sub: ProjectSubcommand,
     },
 
     /// Initialize a new VoltGTD project (create .gtd.toml file)
@@ -135,7 +144,7 @@ pub struct Args
 
 pub fn write_project_defaults() -> EResult<()>
 {
-    let basic_structure = gtd::File {
+    let basic_structure = File {
         lists: vec![
             gtd::List {
                 name: "Inbox".to_owned(),
@@ -160,6 +169,7 @@ pub fn write_project_defaults() -> EResult<()>
     Ok(())
 }
 
+// Command functions
 pub fn reset_project() -> EResult<()>
 {
     if !path::Path::new(GTD_FILE_PATH).exists()
@@ -193,23 +203,13 @@ pub fn init_project() -> EResult<()>
 }
 
 pub fn create_task(
-    file: &mut gtd::File,
+    file: &mut File,
     list_name: String,
     name: String,
     description: Option<String>,
 ) -> EResult<()>
 {
-    let list = match file.get_list(&list_name)
-    {
-        Some(list) => list,
-        None =>
-        {
-            return Err(Box::new(io::Error::new(
-                ErrorKind::NotFound,
-                "List not found.",
-            )));
-        }
-    };
+    let list = file.get_list_mut(&list_name)?;
 
     if let Some(_) = list.get_task(&name)
     {
@@ -226,27 +226,105 @@ pub fn create_task(
 
     list.tasks.push(task);
 
-    println!("Task {list_name}/{name} created succesfully.");
+    let identifier = indexer::index_to_identifier(list.tasks.len() - 1);
+
+    println!("Task {list_name}/{identifier} ({name}) created.");
     Ok(())
 }
 
-pub fn create_list(file: &mut gtd::File, name: String) -> EResult<()>
+pub fn remove_task(
+    file: &mut File,
+    list_name: String,
+    identifier: String,
+) -> EResult<()>
 {
+    let list = file.get_list_mut(&list_name)?;
+
+    let index = indexer::identifier_to_index(&identifier)?;
+
+    if index >= list.tasks.len()
+    {
+        return Err(Box::new(io::Error::new(
+            ErrorKind::NotFound,
+            "Task not found.",
+        )));
+    }
+
+    let removed_task = list.tasks.remove(index);
+
+    println!(
+        "Task {}/{} ({}) removed.",
+        &list_name, &identifier, removed_task.name
+    );
+
+    Ok(())
+}
+
+pub fn move_task(
+    file: &mut File,
+    origin_list_name: String,
+    identifier: String,
+    target_list_name: String,
+) -> EResult<()>
+{
+    let (origin_list, target_list) =
+        file.get_move_anchors(&origin_list_name, &target_list_name)?;
+
+    let index = indexer::identifier_to_index(&identifier)?;
+
+    if index >= origin_list.tasks.len()
+    {
+        return Err(Box::new(io::Error::new(
+            ErrorKind::NotFound,
+            "Task not found.",
+        )));
+    }
+
+    let task = origin_list.tasks.remove(index);
+
+    target_list.tasks.push(task);
+
+    let new_index = target_list.tasks.len() - 1;
+
+    let new_identifier = indexer::index_to_identifier(new_index);
+
+    println!(
+        "Moved task {}/{} to {}/{} ({}).",
+        origin_list_name,
+        identifier,
+        target_list_name,
+        new_identifier,
+        target_list.tasks[new_index].name
+    );
+
+    Ok(())
+}
+
+pub fn create_list(file: &mut File, name: String) -> EResult<()>
+{
+    if let Some(_) = file.lists.iter().find(|list: &&List| list.name == name)
+    {
+        return Err(Box::new(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "List already exists.",
+        )));
+    }
+
     let list = List::new(name.clone());
 
     file.lists.push(list);
 
-    println!("List {name} created succesfully.");
+    println!("List {name} created.");
+
     Ok(())
 }
 
-pub fn show_list(file: &mut gtd::File, name: String) -> EResult<()>
+pub fn remove_list(file: &mut File, name: String) -> EResult<()>
 {
-    let list = match file.get_list(&name)
+    let index = match file.lists.iter().position(|list: &List| list.name == name)
     {
-        Some(list) => list,
-        None =>
-        {
+        Some(index) => index,
+        None => {
             return Err(Box::new(io::Error::new(
                 ErrorKind::NotFound,
                 "List not found.",
@@ -254,17 +332,91 @@ pub fn show_list(file: &mut gtd::File, name: String) -> EResult<()>
         }
     };
 
+    file.lists.remove(index);
+
+    println!("List {name} removed.");
+
+    Ok(())
+}
+
+pub fn show_list(file: &mut File, name: String) -> EResult<()>
+{
+    let list = file.get_list(&name)?;
+
+    if list.tasks.is_empty() && list.projects.is_empty()
+    {
+        println!("List {name} is empty.");
+
+        return Ok(());
+    }
+
     println!("List {name}'s contents:");
 
-    for task in list.tasks.iter_mut()
+    for (index, project) in list.projects.iter().enumerate()
     {
-        println!("- {}", task.name);
+        println!(
+            "(Project) {} - {} ({} tasks)",
+            indexer::index_to_identifier(index),
+            project.name,
+            project.tasks.len()
+        );
+    }
+
+    for (index, task) in list.tasks.iter().enumerate()
+    {
+        println!("{} - {}", indexer::index_to_identifier(index), task.name);
     }
 
     Ok(())
 }
 
-pub fn show_all_lists(file: &mut gtd::File) -> EResult<()>
+pub fn create_project(
+    file: &mut File,
+    list_name: String,
+    name: String,
+) -> EResult<()>
+{
+    let list = file.get_list_mut(&list_name)?;
+
+    if let Some(_) = list.get_project(&name)
+    {
+        return Err(Box::new(io::Error::new(
+            ErrorKind::AlreadyExists,
+            "Project already exists.",
+        )));
+    }
+
+    let project = Project::new(name.clone());
+
+    list.projects.push(project);
+
+    println!("Project {list_name}/{name} created.");
+    Ok(())
+}
+
+pub fn remove_project(file: &mut File, list_name: String, name: String) -> EResult<()>
+{
+    let list = file.get_list_mut(&list_name)?;
+
+    let index = match list.projects.iter().position(|project: &Project| project.name == name)
+    {
+        Some(index) => index,
+        None => {
+            return Err(Box::new(io::Error::new(
+                ErrorKind::NotFound,
+                "Project not found.",
+            )));
+        }
+    };
+
+    let removed_project = list.projects.remove(index);
+
+    println!("Project {} removed.", removed_project.name);
+
+    Ok(())
+}
+
+pub fn show_all_lists(file: &mut File) -> EResult<()>
 {
     println!("Lists in the current VoltGTD project:");
 
@@ -303,8 +455,15 @@ pub fn parse_cli_arguments() -> EResult<()>
                     name,
                     description,
                 } => create_task(&mut file, list, name, description)?,
-                _ =>
-                {}
+                TaskSubcommand::Remove { list, identifier } =>
+                {
+                    remove_task(&mut file, list, identifier)?
+                }
+                TaskSubcommand::Move {
+                    list,
+                    identifier,
+                    new_list,
+                } => move_task(&mut file, list, identifier, new_list)?,
             }
         }
         GTDSubcommand::List { sub } =>
@@ -314,13 +473,22 @@ pub fn parse_cli_arguments() -> EResult<()>
                 ListSubcommand::Create { name } =>
                 {
                     create_list(&mut file, name)?
-                }
+                },
                 ListSubcommand::Show { list } => show_list(&mut file, list)?,
-                _ =>
-                {}
+                ListSubcommand::Remove { list } => {
+                    remove_list(&mut file, list)?
+                },
             }
         }
         GTDSubcommand::Lists => show_all_lists(&mut file)?,
+        GTDSubcommand::Project { sub } =>
+        {
+            match sub
+            {
+                ProjectSubcommand::Create { list, name } => create_project(&mut file, list, name)?,
+                ProjectSubcommand::Remove { list, project } => remove_project(&mut file, list, project)?,
+            }
+        },
         _ =>
         {}
     };
