@@ -1,6 +1,7 @@
 mod file;
 mod gtd;
 mod indexer;
+mod text;
 
 use std::error::Error;
 use std::io;
@@ -9,10 +10,11 @@ use std::path;
 
 use clap::Parser;
 use clap::Subcommand;
-use gtd::List;
 use gtd::File;
+use gtd::List;
 use gtd::Project;
 use gtd::Task;
+use text::Formattable;
 
 pub type EResult<T> = Result<T, Box<dyn Error>>;
 
@@ -147,17 +149,17 @@ pub fn write_project_defaults() -> EResult<()>
     let basic_structure = File {
         lists: vec![
             gtd::List {
-                name: "Inbox".to_owned(),
+                name: "inbox".to_owned(),
                 tasks: vec![],
                 projects: vec![],
             },
             gtd::List {
-                name: "Next".to_owned(),
+                name: "next".to_owned(),
                 tasks: vec![],
                 projects: vec![],
             },
             gtd::List {
-                name: "Done".to_owned(),
+                name: "done".to_owned(),
                 tasks: vec![],
                 projects: vec![],
             },
@@ -182,7 +184,7 @@ pub fn reset_project() -> EResult<()>
 
     write_project_defaults()?;
 
-    println!("The project has been reset.");
+    println!("Project reset.");
     Ok(())
 }
 
@@ -228,7 +230,7 @@ pub fn create_task(
 
     let identifier = indexer::index_to_identifier(list.tasks.len() - 1);
 
-    println!("Task {list_name}/{identifier} ({name}) created.");
+    println!("Task {}/{identifier} ({name}) created.", list_name.to_titlecase());
     Ok(())
 }
 
@@ -254,7 +256,7 @@ pub fn remove_task(
 
     println!(
         "Task {}/{} ({}) removed.",
-        &list_name, &identifier, removed_task.name
+        list_name.to_titlecase(), identifier, removed_task.name
     );
 
     Ok(())
@@ -290,9 +292,9 @@ pub fn move_task(
 
     println!(
         "Moved task {}/{} to {}/{} ({}).",
-        origin_list_name,
+        origin_list_name.to_titlecase(),
         identifier,
-        target_list_name,
+        target_list_name.to_titlecase(),
         new_identifier,
         target_list.tasks[new_index].name
     );
@@ -312,29 +314,33 @@ pub fn create_list(file: &mut File, name: String) -> EResult<()>
 
     let list = List::new(name.clone());
 
+    let formatted_name = list.name.to_titlecase();
+
     file.lists.push(list);
 
-    println!("List {name} created.");
+    println!("List {formatted_name} created.");
 
     Ok(())
 }
 
 pub fn remove_list(file: &mut File, name: String) -> EResult<()>
 {
-    let index = match file.lists.iter().position(|list: &List| list.name == name)
-    {
-        Some(index) => index,
-        None => {
-            return Err(Box::new(io::Error::new(
-                ErrorKind::NotFound,
-                "List not found.",
-            )));
-        }
-    };
+    let index =
+        match file.lists.iter().position(|list: &List| list.name == name)
+        {
+            Some(index) => index,
+            None =>
+            {
+                return Err(Box::new(io::Error::new(
+                    ErrorKind::NotFound,
+                    "List not found.",
+                )));
+            }
+        };
 
     file.lists.remove(index);
 
-    println!("List {name} removed.");
+    println!("List {} removed.", name.to_titlecase());
 
     Ok(())
 }
@@ -343,21 +349,23 @@ pub fn show_list(file: &mut File, name: String) -> EResult<()>
 {
     let list = file.get_list(&name)?;
 
+    let formatted_name = name.to_titlecase();
+
     if list.tasks.is_empty() && list.projects.is_empty()
     {
-        println!("List {name} is empty.");
+        println!("List {formatted_name} is empty.");
 
         return Ok(());
     }
 
-    println!("List {name}'s contents:");
+    println!("List {formatted_name}'s contents:");
 
     for (index, project) in list.projects.iter().enumerate()
     {
         println!(
             "(Project) {} - {} ({} tasks)",
             indexer::index_to_identifier(index),
-            project.name,
+            project.name.to_titlecase(),
             project.tasks.len()
         );
     }
@@ -390,18 +398,26 @@ pub fn create_project(
 
     list.projects.push(project);
 
-    println!("Project {list_name}/{name} created.");
+    println!("Project {}/{} created.", list_name.to_titlecase(), name.to_titlecase());
     Ok(())
 }
 
-pub fn remove_project(file: &mut File, list_name: String, name: String) -> EResult<()>
+pub fn remove_project(
+    file: &mut File,
+    list_name: String,
+    name: String,
+) -> EResult<()>
 {
     let list = file.get_list_mut(&list_name)?;
 
-    let index = match list.projects.iter().position(|project: &Project| project.name == name)
+    let index = match list
+        .projects
+        .iter()
+        .position(|project: &Project| project.name == name)
     {
         Some(index) => index,
-        None => {
+        None =>
+        {
             return Err(Box::new(io::Error::new(
                 ErrorKind::NotFound,
                 "Project not found.",
@@ -411,7 +427,7 @@ pub fn remove_project(file: &mut File, list_name: String, name: String) -> EResu
 
     let removed_project = list.projects.remove(index);
 
-    println!("Project {} removed.", removed_project.name);
+    println!("Project {} removed.", removed_project.name.to_titlecase());
 
     Ok(())
 }
@@ -422,7 +438,7 @@ pub fn show_all_lists(file: &mut File) -> EResult<()>
 
     for list in file.lists.iter_mut()
     {
-        println!("- {}", list.name);
+        println!("- {}", list.name.to_titlecase());
     }
 
     Ok(())
@@ -454,30 +470,54 @@ pub fn parse_cli_arguments() -> EResult<()>
                     list,
                     name,
                     description,
-                } => create_task(&mut file, list, name, description)?,
+                } =>
+                {
+                    create_task(
+                        &mut file,
+                        list.to_lowercase(),
+                        name,
+                        description,
+                    )?
+                }
                 TaskSubcommand::Remove { list, identifier } =>
                 {
-                    remove_task(&mut file, list, identifier)?
+                    remove_task(
+                        &mut file,
+                        list.to_lowercase(),
+                        identifier.to_lowercase(),
+                    )?
                 }
                 TaskSubcommand::Move {
                     list,
                     identifier,
                     new_list,
-                } => move_task(&mut file, list, identifier, new_list)?,
+                } =>
+                {
+                    move_task(
+                        &mut file,
+                        list.to_lowercase(),
+                        identifier.to_lowercase(),
+                        new_list.to_lowercase(),
+                    )?
+                }
             }
         }
         GTDSubcommand::List { sub } =>
         {
             match sub
             {
+                ListSubcommand::Show { list } =>
+                {
+                    show_list(&mut file, list.to_lowercase())?
+                }
                 ListSubcommand::Create { name } =>
                 {
                     create_list(&mut file, name)?
-                },
-                ListSubcommand::Show { list } => show_list(&mut file, list)?,
-                ListSubcommand::Remove { list } => {
-                    remove_list(&mut file, list)?
-                },
+                }
+                ListSubcommand::Remove { list } =>
+                {
+                    remove_list(&mut file, list.to_lowercase())?
+                }
             }
         }
         GTDSubcommand::Lists => show_all_lists(&mut file)?,
@@ -485,10 +525,24 @@ pub fn parse_cli_arguments() -> EResult<()>
         {
             match sub
             {
-                ProjectSubcommand::Create { list, name } => create_project(&mut file, list, name)?,
-                ProjectSubcommand::Remove { list, project } => remove_project(&mut file, list, project)?,
+                ProjectSubcommand::Create { list, name } =>
+                {
+                    create_project(
+                        &mut file,
+                        list.to_lowercase(),
+                        name.to_lowercase(),
+                    )?
+                }
+                ProjectSubcommand::Remove { list, project } =>
+                {
+                    remove_project(
+                        &mut file,
+                        list.to_lowercase(),
+                        project.to_lowercase(),
+                    )?
+                }
             }
-        },
+        }
         _ =>
         {}
     };
