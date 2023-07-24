@@ -165,7 +165,10 @@ pub fn parse_cli_arguments() -> EResult<()>
                     path,
                     name,
                     description,
-                } => commands::create_task(&mut file, path, name, description)?,
+                } =>
+                {
+                    commands::create_task(&mut file, path, name, description)?
+                }
                 TaskSubcommand::Remove { path } =>
                 {
                     commands::remove_task(&mut file, path)?
@@ -210,10 +213,7 @@ pub fn parse_cli_arguments() -> EResult<()>
                 ProjectSubcommand::Move {
                     source,
                     destination,
-                } =>
-                {
-                    commands::move_project(&mut file, &source, &destination)?;
-                }
+                } => commands::move_project(&mut file, &source, &destination)?,
             }
         }
         _ =>
