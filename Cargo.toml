@@ -2,7 +2,7 @@
 name = "voltgtd"
 description = "Volatus' GTD utility tool"
 authors = ["Volatus"]
-version = "0.18.0"
+version = "0.19.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,6 +14,7 @@ lazy_static = "1.4"
 regex = "1.8"
 toml = "0.7"
 serde = { version = "1.0", features = ["derive"] }
+colored = "2.0"
 
 [profile.dev]
 opt-level = 0

@@ -32,15 +32,14 @@ pub enum ProjectSubcommand
         /// The path of the project to be removed
         path: String,
     },
-    ///// Move a project
-    // TODO: Implement this
-    // Move
-    // {
-    //     /// The current location of the project
-    //     source: String,
-    //     /// The final location of the project
-    //     destination: String,
-    // },
+    /// Move a project
+    Move
+    {
+        /// The current location of the project
+        source: String,
+        /// The final location of the project
+        destination: String,
+    },
 }
 
 /// Commands to deal with lists
@@ -207,14 +206,14 @@ pub fn parse_cli_arguments() -> EResult<()>
                 ProjectSubcommand::Remove { path } =>
                 {
                     commands::remove_project(&mut file, &path)?
-                } /* TODO: Implement this
-                   * ProjectSubcommand::Move {
-                   *     source,
-                   *     destination,
-                   * } =>
-                   * {
-                   *     commands::move_project(&mut file, &source,
-                   * &destination); } */
+                }
+                ProjectSubcommand::Move {
+                    source,
+                    destination,
+                } =>
+                {
+                    commands::move_project(&mut file, &source, &destination)?;
+                }
             }
         }
         _ =>

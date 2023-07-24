@@ -190,6 +190,53 @@ pub fn move_task(file: &mut File, source: &str, target: &str) -> EResult<()>
     Ok(())
 }
 
+pub fn move_project(file: &mut File, source: &str, target: &str)
+    -> EResult<()>
+{
+    let source_path = itempath::ContainerPath::parse(source)?;
+
+    let target_path = itempath::ContainerPath::parse(target)?;
+
+    let source_index = match source_path.project_index
+    {
+        Some(index) => index,
+        None =>
+        {
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Please specify a project in the source path.",
+            )));
+        }
+    };
+
+    if target_path.project_index.is_some()
+    {
+        return Err(Box::new(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Can not move a project to another project.",
+        )));
+    }
+
+    let source_list = file.get_list_mut_forced(&source_path.list_name)?;
+
+    source_list.get_project_forced(source_index)?;
+
+    let project = source_list.remove_project(source_index);
+
+    let project_name = project.name.clone();
+
+    let target_list = file.get_list_mut_forced(&target_path.list_name)?;
+
+    target_list.push_project(project);
+
+    println!(
+        "Project {} moved to {} (\"{}\")",
+        &source, &target, &project_name
+    );
+
+    Ok(())
+}
+
 pub fn create_list(file: &mut File, name: String) -> EResult<()>
 {
     if let Some(_) = file.lists.iter().find(|list: &&List| list.name == name)
