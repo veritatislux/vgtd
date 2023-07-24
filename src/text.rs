@@ -3,12 +3,12 @@ pub trait Formattable
     fn to_titlecase(&self) -> String;
 }
 
-
 impl<T> Formattable for T
 where
     T: ToString,
 {
-    fn to_titlecase(&self) -> String {
+    fn to_titlecase(&self) -> String
+    {
         let source = self.to_string();
 
         if source.len() < 2
