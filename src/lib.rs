@@ -207,15 +207,14 @@ pub fn parse_cli_arguments() -> EResult<()>
                 ProjectSubcommand::Remove { path } =>
                 {
                     commands::remove_project(&mut file, &path)?
-                }
-                // TODO: Implement this
-                // ProjectSubcommand::Move {
-                //     source,
-                //     destination,
-                // } =>
-                // {
-                //     commands::move_project(&mut file, &source, &destination);
-                // }
+                } /* TODO: Implement this
+                   * ProjectSubcommand::Move {
+                   *     source,
+                   *     destination,
+                   * } =>
+                   * {
+                   *     commands::move_project(&mut file, &source,
+                   * &destination); } */
             }
         }
         _ =>

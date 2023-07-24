@@ -149,7 +149,8 @@ pub trait ProjectContainer
         }
     }
 
-    fn get_project_mut_forced(&mut self, index: usize) -> EResult<&mut Project>
+    fn get_project_mut_forced(&mut self, index: usize)
+        -> EResult<&mut Project>
     {
         match self.get_project_mut(index)
         {

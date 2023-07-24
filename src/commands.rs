@@ -128,7 +128,8 @@ pub fn remove_task(file: &mut File, path: String) -> EResult<()>
     {
         let project = list.get_project_mut_forced(project_index)?;
 
-        let task_name = project.get_task_forced(task_path.task_index)?.name.clone();
+        let task_name =
+            project.get_task_forced(task_path.task_index)?.name.clone();
 
         project.remove_task(task_path.task_index);
 
@@ -136,7 +137,8 @@ pub fn remove_task(file: &mut File, path: String) -> EResult<()>
     }
     else
     {
-        let task_name = list.get_task_forced(task_path.task_index)?.name.clone();
+        let task_name =
+            list.get_task_forced(task_path.task_index)?.name.clone();
 
         list.remove_task(task_path.task_index);
 
