@@ -315,6 +315,40 @@ pub fn show_list(file: &mut File, name: &str) -> EResult<()>
     Ok(())
 }
 
+pub fn show_project(file: &mut File, path: &str) -> EResult<()>
+{
+    let project_path = itempath::ContainerPath::parse(path)?;
+
+    let project_index = match project_path.project_index
+    {
+        Some(index) => index,
+        None =>
+        {
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "No project index provided.",
+            )));
+        }
+    };
+
+    let list = file.get_list_forced(&project_path.list_name)?;
+
+    let project = list.get_project_forced(project_index)?;
+
+    println!("Contents of project {}:", &project.name.to_titlecase());
+
+    for (index, task) in project.tasks().iter().enumerate()
+    {
+        println!(
+            "{} - {}",
+            indexer::index_to_identifier(index),
+            &task.name.to_titlecase()
+        )
+    }
+
+    Ok(())
+}
+
 pub fn create_project(
     file: &mut File,
     list_name: &str,

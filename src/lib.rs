@@ -40,6 +40,12 @@ pub enum ProjectSubcommand
         /// The final location of the project
         destination: String,
     },
+    /// Show the contents of a project
+    Show
+    {
+        /// The path to the list to be shown
+        path: String,
+    },
 }
 
 /// Commands to deal with lists
@@ -214,6 +220,10 @@ pub fn parse_cli_arguments() -> EResult<()>
                     source,
                     destination,
                 } => commands::move_project(&mut file, &source, &destination)?,
+                ProjectSubcommand::Show { path } =>
+                {
+                    commands::show_project(&mut file, &path)?
+                }
             }
         }
         _ =>

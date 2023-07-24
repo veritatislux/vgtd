@@ -143,7 +143,7 @@ pub trait ProjectContainer
             {
                 return Err(Box::new(io::Error::new(
                     io::ErrorKind::NotFound,
-                    "Task not found.",
+                    "Project not found.",
                 )));
             }
         }
