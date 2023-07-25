@@ -71,6 +71,9 @@ pub enum ListSubcommand
     {
         /// The name of the list to show the contents of
         list: String,
+        /// If provided, lists project's tasks as well
+        #[arg(long, short)]
+        all: bool,
     },
 }
 
@@ -189,9 +192,9 @@ pub fn parse_cli_arguments() -> EResult<()>
         {
             match sub
             {
-                ListSubcommand::Show { list } =>
+                ListSubcommand::Show { list, all } =>
                 {
-                    commands::show_list(&mut file, &list)?
+                    commands::show_list(&mut file, &list, all)?
                 }
                 ListSubcommand::Create { name } =>
                 {

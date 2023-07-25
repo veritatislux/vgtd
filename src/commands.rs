@@ -2,6 +2,9 @@ use std::io;
 use std::io::ErrorKind;
 use std::path;
 
+use colored::Color;
+use colored::Colorize;
+
 use crate::gtd;
 use crate::gtd::File;
 use crate::gtd::List;
@@ -17,6 +20,15 @@ use crate::gtd::ProjectContainer;
 use crate::gtd::TaskContainer;
 
 pub const GTD_FILE_PATH: &str = ".gtd.toml";
+pub const TEXT_PREFIX: &str = "\n";
+pub const TEXT_POSTFIX: &str = "\n";
+pub const LEFT_PADDING: &str = "  ";
+pub const LEFT_PADDING_1: &str = "  ";
+pub const LEFT_PADDING_2: &str = "    ";
+pub const LEFT_PADDING_3: &str = "      ";
+pub const COLOR_IDENTIFIER: Color = Color::Yellow;
+pub const COLOR_TOPIC: Color = Color::BrightBlue;
+pub const COLOR_VALUE: Color = Color::BrightGreen;
 
 pub fn write_project_defaults() -> EResult<()>
 {
@@ -280,7 +292,7 @@ pub fn remove_list(file: &mut File, name: &str) -> EResult<()>
     Ok(())
 }
 
-pub fn show_list(file: &mut File, name: &str) -> EResult<()>
+pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
 {
     let name = name.to_lowercase();
 
@@ -295,22 +307,68 @@ pub fn show_list(file: &mut File, name: &str) -> EResult<()>
         return Ok(());
     }
 
-    println!("List {formatted_name}'s contents:");
+    print!("{TEXT_PREFIX}");
 
-    for (index, project) in list.projects().iter().enumerate()
+    println!(
+        "{LEFT_PADDING}Contents of list {}",
+        formatted_name.color(COLOR_IDENTIFIER).bold()
+    );
+
+    print!("\n");
+
+    if !list.projects().is_empty()
     {
         println!(
-            "(Project) {} - {} ({} tasks)",
-            indexer::index_to_identifier(index),
-            project.name.to_titlecase(),
-            project.tasks().len()
+            "{LEFT_PADDING}{LEFT_PADDING_1}{}",
+            "Projects".color(COLOR_TOPIC).bold()
         );
+
+        for (index, project) in list.projects().iter().enumerate()
+        {
+            println!(
+                "{LEFT_PADDING}{LEFT_PADDING_2}{}. {} ({} tasks)",
+                indexer::index_to_identifier(index).color(COLOR_VALUE),
+                project.name.to_titlecase().color(COLOR_IDENTIFIER),
+                project.tasks().len().to_string().color(COLOR_VALUE)
+            );
+
+            if all && !project.tasks().is_empty()
+            {
+                for (index, task) in project.tasks().iter().enumerate()
+                {
+                    println!(
+                        "{LEFT_PADDING}{LEFT_PADDING_3}{}. {}",
+                        indexer::index_to_identifier(index).color(COLOR_VALUE),
+                        &task.name.to_titlecase().color(COLOR_IDENTIFIER)
+                    );
+                }
+            }
+
+            if index < project.tasks().len() - 1 && !list.tasks().is_empty()
+            {
+                print!("\n");
+            }
+        }
     }
 
-    for (index, task) in list.tasks().iter().enumerate()
+    if !list.tasks().is_empty()
     {
-        println!("{} - {}", indexer::index_to_identifier(index), task.name);
+        println!(
+            "{LEFT_PADDING}{LEFT_PADDING_1}{}",
+            "Tasks".color(COLOR_TOPIC).bold()
+        );
+
+        for (index, task) in list.tasks().iter().enumerate()
+        {
+            println!(
+                "{LEFT_PADDING}{LEFT_PADDING_2}{}. {}",
+                indexer::index_to_identifier(index).color(COLOR_VALUE),
+                task.name.color(COLOR_IDENTIFIER)
+            );
+        }
     }
+
+    print!("{TEXT_POSTFIX}");
 
     Ok(())
 }
@@ -394,16 +452,6 @@ pub fn remove_project(file: &mut File, path: &str) -> EResult<()>
 
     Ok(())
 }
-
-// TODO: Implement this
-// pub fn move_project(
-//     file: &mut File,
-//     source: &str,
-//     destination: &str
-// ) -> EResult<()>
-// {
-//     let source_path = itempath::ContainerPath::parse(source)?;
-// }
 
 pub fn show_all_lists(file: &mut File) -> EResult<()>
 {
