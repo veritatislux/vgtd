@@ -4,6 +4,7 @@ mod gtd;
 mod indexer;
 mod itempath;
 mod text;
+pub mod tos;
 
 use std::error::Error;
 
@@ -130,13 +131,13 @@ pub enum GTDSubcommand
         sub: ProjectSubcommand,
     },
 
-    /// Initialize a new VoltGTD project (create .gtd.toml file)
+    /// Initialize a new workspace (create .gtd.toml file)
     Init,
 
-    /// Reset an existing VoltGTD project
+    /// Reset an existing workspace
     Reset,
 
-    /// Show all the lists in the VoltGTD project
+    /// Show all the lists in the workspace
     Lists,
 }
 
@@ -154,12 +155,12 @@ pub fn parse_cli_arguments() -> EResult<()>
 
     if let GTDSubcommand::Init = args.sub
     {
-        return commands::init_project();
+        return commands::initialize_workspace();
     }
 
     if let GTDSubcommand::Reset = args.sub
     {
-        return commands::reset_project();
+        return commands::reset_workspace();
     }
 
     let mut file = file::parse(GTD_FILE_PATH)?;

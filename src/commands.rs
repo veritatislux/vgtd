@@ -2,7 +2,6 @@ use std::io;
 use std::io::ErrorKind;
 use std::path;
 
-use colored::Color;
 use colored::Colorize;
 
 use crate::gtd;
@@ -12,7 +11,7 @@ use crate::gtd::Project;
 use crate::gtd::Task;
 use crate::indexer;
 use crate::itempath;
-use crate::text::Formattable;
+use crate::tos;
 use crate::EResult;
 
 use crate::gtd::ListContainer;
@@ -20,17 +19,8 @@ use crate::gtd::ProjectContainer;
 use crate::gtd::TaskContainer;
 
 pub const GTD_FILE_PATH: &str = ".gtd.toml";
-pub const TEXT_PREFIX: &str = "\n";
-pub const TEXT_POSTFIX: &str = "\n";
-pub const LEFT_PADDING: &str = "  ";
-pub const LEFT_PADDING_1: &str = "  ";
-pub const LEFT_PADDING_2: &str = "    ";
-pub const LEFT_PADDING_3: &str = "      ";
-pub const COLOR_IDENTIFIER: Color = Color::Yellow;
-pub const COLOR_TOPIC: Color = Color::BrightBlue;
-pub const COLOR_VALUE: Color = Color::BrightGreen;
 
-pub fn write_project_defaults() -> EResult<()>
+pub fn write_workspace_defaults() -> EResult<()>
 {
     let basic_structure = File {
         lists: vec![
@@ -45,7 +35,7 @@ pub fn write_project_defaults() -> EResult<()>
     Ok(())
 }
 
-pub fn reset_project() -> EResult<()>
+pub fn reset_workspace() -> EResult<()>
 {
     if !path::Path::new(GTD_FILE_PATH).exists()
     {
@@ -55,26 +45,26 @@ pub fn reset_project() -> EResult<()>
         )));
     }
 
-    write_project_defaults()?;
+    write_workspace_defaults()?;
 
-    println!("The project has been reset.");
+    tos::send_success("The workspace has been reset.");
 
     Ok(())
 }
 
-pub fn init_project() -> EResult<()>
+pub fn initialize_workspace() -> EResult<()>
 {
     if path::Path::new(GTD_FILE_PATH).exists()
     {
         return Err(Box::new(io::Error::new(
             ErrorKind::AlreadyExists,
-            "Project already exists.",
+            "Workspace already exists.",
         )));
     }
 
-    write_project_defaults()?;
+    write_workspace_defaults()?;
 
-    println!("A new project has been initialized at this directory.");
+    tos::send_success("New workspace initialized in this directory.");
 
     Ok(())
 }
@@ -96,36 +86,43 @@ pub fn create_task(
 
         project.task_exists_forced(&name)?;
 
-        let task = Task { name, description };
-
-        let task_name = task.name.clone();
+        let task = Task {
+            name: name.clone(),
+            description: description.clone(),
+        };
 
         project.push_task(task);
-
-        println!(
-            "Task {}/{} (\"{}\") created.",
-            path.to_titlecase(),
-            project.tasks().len(),
-            &task_name,
-        );
     }
     else
     {
         list.task_exists_forced(&name)?;
 
-        let task = Task { name, description };
-
-        let task_name = task.name.clone();
+        let task = Task {
+            name: name.clone(),
+            description: description.clone(),
+        };
 
         list.push_task(task);
-
-        println!(
-            "Task {}/{} (\"{}\") created.",
-            path.to_titlecase(),
-            list.tasks().len(),
-            &task_name,
-        );
     }
+
+    tos::send_success(&format!(
+        // TODO: Make this path string formatting native to the path struct
+        "Task {}{}/{} ({}) created.",
+        tos::format_list_name(&task_path.list_name),
+        if let Some(project_index) = task_path.project_index
+        {
+            format!(
+                "/{}",
+                project_index.to_string().color(tos::COLOR_NUM_VALUE)
+            )
+        }
+        else
+        {
+            "".to_string()
+        },
+        list.tasks().len().to_string().color(tos::COLOR_NUM_VALUE),
+        &name
+    ));
 
     Ok(())
 }
@@ -145,7 +142,10 @@ pub fn remove_task(file: &mut File, path: String) -> EResult<()>
 
         project.remove_task(task_path.task_index);
 
-        println!("Task {} ({}) removed.", &path, &task_name);
+        tos::send_success(&format!(
+            "Task {} ({}) removed.",
+            &path, &task_name
+        ));
     }
     else
     {
@@ -154,7 +154,10 @@ pub fn remove_task(file: &mut File, path: String) -> EResult<()>
 
         list.remove_task(task_path.task_index);
 
-        println!("Task {} ({}) removed.", &path, &task_name);
+        tos::send_success(&format!(
+            "Task {} ({}) removed.",
+            &path, &task_name
+        ));
     };
 
     Ok(())
@@ -197,7 +200,10 @@ pub fn move_task(file: &mut File, source: &str, target: &str) -> EResult<()>
         target_list.push_task(task);
     };
 
-    println!("Moved task {} to {} (\"{}\").", source, target, task_name,);
+    tos::send_success(&format!(
+        "Moved task {} to {} (\"{}\").",
+        source, target, task_name,
+    ));
 
     Ok(())
 }
@@ -241,10 +247,10 @@ pub fn move_project(file: &mut File, source: &str, target: &str)
 
     target_list.push_project(project);
 
-    println!(
+    tos::send_success(&format!(
         "Project {} moved to {} (\"{}\")",
         &source, &target, &project_name
-    );
+    ));
 
     Ok(())
 }
@@ -261,11 +267,11 @@ pub fn create_list(file: &mut File, name: String) -> EResult<()>
 
     let list = List::new(name.clone());
 
-    let formatted_name = list.name.to_titlecase();
+    let formatted_name = tos::format_list_name(&list.name);
 
     file.lists.push(list);
 
-    println!("List {formatted_name} created.");
+    tos::send_success(&format!("List {formatted_name} created."));
 
     Ok(())
 }
@@ -287,7 +293,10 @@ pub fn remove_list(file: &mut File, name: &str) -> EResult<()>
 
     file.lists.remove(index);
 
-    println!("List {} removed.", name.to_titlecase());
+    tos::send_success(&format!(
+        "List {} removed.",
+        tos::format_list_name(&name)
+    ));
 
     Ok(())
 }
@@ -298,77 +307,92 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
 
     let list = file.get_list_forced(&name)?;
 
-    let formatted_name = name.to_titlecase();
+    let formatted_name = tos::format_list_name(&name);
 
     if list.tasks().is_empty() && list.projects().is_empty()
     {
-        println!("List {formatted_name} is empty.");
+        tos::send_success(&format!("List {formatted_name} is empty."));
 
         return Ok(());
     }
 
-    print!("{TEXT_PREFIX}");
+    let mut output = tos::OutputBlock::new();
 
-    println!(
-        "{LEFT_PADDING}Contents of list {}",
-        formatted_name.color(COLOR_IDENTIFIER).bold()
-    );
-
-    print!("\n");
+    output
+        .insert_line(
+            &format!(
+                "Contents of list {}",
+                formatted_name.color(tos::COLOR_IDENTIFIER)
+            ),
+            0,
+        )
+        .insert_text("\n");
 
     if !list.projects().is_empty()
     {
-        println!(
-            "{LEFT_PADDING}{LEFT_PADDING_1}{}",
-            "Projects".color(COLOR_TOPIC).bold()
-        );
+        output.insert_line(&tos::format_section_name("projects"), 1);
 
         for (index, project) in list.projects().iter().enumerate()
         {
-            println!(
-                "{LEFT_PADDING}{LEFT_PADDING_2}{}. {} ({} tasks)",
-                indexer::index_to_identifier(index).color(COLOR_VALUE),
-                project.name.to_titlecase().color(COLOR_IDENTIFIER),
-                project.tasks().len().to_string().color(COLOR_VALUE)
+            output.insert_line(
+                &format!(
+                    "{}. {} ({} tasks)",
+                    indexer::index_to_identifier(index)
+                        .color(tos::COLOR_NUM_VALUE),
+                    tos::format_project_name(&project.name),
+                    project
+                        .tasks()
+                        .len()
+                        .to_string()
+                        .color(tos::COLOR_NUM_VALUE)
+                ),
+                2,
             );
 
             if all && !project.tasks().is_empty()
             {
                 for (index, task) in project.tasks().iter().enumerate()
                 {
-                    println!(
-                        "{LEFT_PADDING}{LEFT_PADDING_3}{}. {}",
-                        indexer::index_to_identifier(index).color(COLOR_VALUE),
-                        &task.name.to_titlecase().color(COLOR_IDENTIFIER)
+                    output.insert_line(
+                        &format!(
+                            "{}. {}",
+                            indexer::index_to_identifier(index)
+                                .color(tos::COLOR_NUM_VALUE),
+                            tos::format_task_name(&task.name)
+                        ),
+                        3,
                     );
                 }
-            }
 
-            if index < project.tasks().len() - 1 && !list.tasks().is_empty()
-            {
-                print!("\n");
+                if index < list.projects().len() - 1
+                {
+                    output.insert_text("\n");
+                }
             }
         }
+
+        output.insert_text("\n");
     }
 
     if !list.tasks().is_empty()
     {
-        println!(
-            "{LEFT_PADDING}{LEFT_PADDING_1}{}",
-            "Tasks".color(COLOR_TOPIC).bold()
-        );
+        output.insert_line(&tos::format_section_name("tasks"), 1);
 
         for (index, task) in list.tasks().iter().enumerate()
         {
-            println!(
-                "{LEFT_PADDING}{LEFT_PADDING_2}{}. {}",
-                indexer::index_to_identifier(index).color(COLOR_VALUE),
-                task.name.color(COLOR_IDENTIFIER)
+            output.insert_line(
+                &format!(
+                    "{}. {}",
+                    indexer::index_to_identifier(index)
+                        .color(tos::COLOR_NUM_VALUE),
+                    task.name.color(tos::COLOR_IDENTIFIER)
+                ),
+                2,
             );
         }
     }
 
-    print!("{TEXT_POSTFIX}");
+    output.send();
 
     Ok(())
 }
@@ -393,16 +417,32 @@ pub fn show_project(file: &mut File, path: &str) -> EResult<()>
 
     let project = list.get_project_forced(project_index)?;
 
-    println!("Contents of project {}:", &project.name.to_titlecase());
+    let mut output = tos::OutputBlock::new();
+
+    output
+        .insert_line(
+            &format!(
+                "Contents of project {}",
+                tos::format_project_name(&project.name)
+            ),
+            0,
+        )
+        .insert_text("\n");
 
     for (index, task) in project.tasks().iter().enumerate()
     {
-        println!(
-            "{} - {}",
-            indexer::index_to_identifier(index),
-            &task.name.to_titlecase()
-        )
+        output.insert_line(
+            &format!(
+                "{}. {}",
+                indexer::index_to_identifier(index)
+                    .color(tos::COLOR_NUM_VALUE),
+                tos::format_task_name(&task.name)
+            ),
+            0,
+        );
     }
+
+    output.send();
 
     Ok(())
 }
@@ -425,12 +465,14 @@ pub fn create_project(
 
     list.push_project(project);
 
-    println!(
-        "Project {}/{} (\"{}\") created.",
-        list_name.to_titlecase(),
-        list.projects().len() - 1,
-        project_name.to_titlecase()
-    );
+    tos::send_success(&format!(
+        "Project {}/{} ({}) created.",
+        tos::format_list_name(&list_name),
+        (list.projects().len() - 1)
+            .to_string()
+            .color(tos::COLOR_NUM_VALUE),
+        tos::format_project_name(&project_name),
+    ));
 
     Ok(())
 }
@@ -447,7 +489,12 @@ pub fn remove_project(file: &mut File, path: &str) -> EResult<()>
 
         list.remove_project(index);
 
-        println!("Project {} (\"{}\") removed.", &path, &project_name);
+        tos::send_success(&format!(
+            "Project {}/{} ({}) removed.",
+            tos::format_list_name(&project_path.list_name),
+            index.to_string().color(tos::COLOR_NUM_VALUE),
+            tos::format_project_name(&project_name)
+        ));
     }
 
     Ok(())
@@ -455,12 +502,27 @@ pub fn remove_project(file: &mut File, path: &str) -> EResult<()>
 
 pub fn show_all_lists(file: &mut File) -> EResult<()>
 {
-    println!("Lists in the current VoltGTD project:");
+    if file.lists().is_empty()
+    {
+        tos::send_info(&format!("There are no lists in this workspace."));
+        return Ok(());
+    }
+
+    let mut output = tos::OutputBlock::new();
+
+    output
+        .insert_line("Lists in the current workspace", 0)
+        .insert_text("\n");
 
     for list in file.lists.iter_mut()
     {
-        println!("- {}", list.name.to_titlecase());
+        output.insert_line(
+            &format!("• {}", tos::format_list_name(&list.name)),
+            1,
+        );
     }
+
+    output.send();
 
     Ok(())
 }
