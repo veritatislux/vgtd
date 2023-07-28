@@ -87,10 +87,7 @@ pub fn create_task(
 
         project.task_exists_forced(&name)?;
 
-        let task = Task {
-            name: name.clone(),
-            description: description.clone(),
-        };
+        let task = Task::new(name.clone(), description.clone());
 
         project.push_task(task);
     }
@@ -98,10 +95,7 @@ pub fn create_task(
     {
         list.task_exists_forced(&name)?;
 
-        let task = Task {
-            name: name.clone(),
-            description: description.clone(),
-        };
+        let task = Task::new(name.clone(), description.clone());
 
         list.push_task(task);
     }
@@ -513,10 +507,15 @@ pub fn show_all_lists(file: &mut File) -> EResult<()>
         .insert_line("Lists in the current workspace", 0)
         .insert_text("\n");
 
-    for list in file.lists.iter_mut()
+    for list in file.lists.iter()
     {
         output.insert_line(
-            &format!("• {}", tos::format_list_name(&list.name)),
+            &format!(
+                "• {} ({} tasks, {} projects)",
+                tos::format_list_name(&list.name),
+                tos::format_index(list.tasks().len()),
+                tos::format_index(list.projects().len())
+            ),
             1,
         );
     }

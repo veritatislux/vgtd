@@ -18,6 +18,8 @@ pub const COLOR_NUM_VALUE: Color = Color::BrightGreen;
 pub const COLOR_TITLE: Color = Color::BrightYellow;
 pub const COLOR_GROUP: Color = Color::BrightBlue;
 pub const COLOR_IDENTIFIER: Color = Color::BrightMagenta;
+pub const COLOR_TODO_ITEM: Color = Color::BrightBlack;
+pub const COLOR_DONE_ITEM: Color = Color::BrightCyan;
 
 pub trait OutputFormattable
 {

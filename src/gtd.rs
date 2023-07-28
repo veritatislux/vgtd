@@ -18,20 +18,21 @@ pub struct Task
 {
     pub name: String,
     pub description: Option<String>,
-    pub status: TaskStatus
+    pub status: TaskStatus,
 }
 
 impl Task
 {
     pub fn new(name: String, description: Option<String>) -> Self
     {
-        Self { name, description, status: TaskStatus::TODO }
+        Self {
+            name,
+            description,
+            status: TaskStatus::TODO,
+        }
     }
 
-    pub fn done(&self) -> bool
-    {
-        matches!(self.status, TaskStatus::DONE)
-    }
+    pub fn done(&self) -> bool { matches!(self.status, TaskStatus::DONE) }
 }
 
 pub trait TaskContainer
@@ -107,11 +108,7 @@ pub trait TaskContainer
 
     fn tasks_completed(&self) -> usize
     {
-        self
-            .tasks()
-            .iter()
-            .filter(|t| t.done())
-            .count()
+        self.tasks().iter().filter(|t| t.done()).count()
     }
 
     fn tasks_completion(&self) -> f64
@@ -230,8 +227,7 @@ pub trait ProjectContainer
 
     fn projects_completed(&self) -> usize
     {
-        self
-            .projects()
+        self.projects()
             .iter()
             .filter(|p| p.all_tasks_done())
             .count()
