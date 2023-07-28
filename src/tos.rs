@@ -1,6 +1,8 @@
 // Terminal Output System
 
 use crate::text::Formattable;
+use crate::gtd::Task;
+use crate::gtd::TaskStatus;
 
 use colored::Color;
 use colored::Colorize;
@@ -20,6 +22,8 @@ pub const COLOR_GROUP: Color = Color::BrightBlue;
 pub const COLOR_IDENTIFIER: Color = Color::BrightMagenta;
 pub const COLOR_TODO_ITEM: Color = Color::BrightBlack;
 pub const COLOR_DONE_ITEM: Color = Color::BrightCyan;
+pub const COLOR_TODO_LABEL: Color = Color::BrightBlack;
+pub const COLOR_DONE_LABEL: Color = Color::BrightMagenta;
 
 pub trait OutputFormattable
 {
@@ -51,9 +55,33 @@ pub fn format_project_name(name: &str) -> String
     format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER).bold())
 }
 
-pub fn format_task_name(name: &str) -> String
+pub fn format_task_name(task: &Task) -> String
 {
-    format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER))
+    task.name.to_titlecase().color(
+        match task.status
+        {
+            TaskStatus::TODO => COLOR_TODO_ITEM,
+            TaskStatus::DONE => COLOR_DONE_ITEM,
+        }
+    ).to_string()
+}
+
+pub fn format_task_status(status: &TaskStatus) -> String
+{
+    match status
+    {
+        TaskStatus::TODO => "TODO".color(COLOR_TODO_LABEL).bold().to_string(),
+        TaskStatus::DONE => "DONE".color(COLOR_DONE_LABEL).bold().to_string(),
+    }
+}
+
+pub fn format_task(task: &Task) -> String
+{
+    format!(
+        "{} {}",
+        format_task_status(&task.status),
+        format_task_name(&task),
+    )
 }
 
 pub fn format_section_name(name: &str) -> String

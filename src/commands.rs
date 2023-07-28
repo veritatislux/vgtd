@@ -349,9 +349,10 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
                     output.insert_line(
                         &format!(
                             "{}. {}",
+                            // TODO: Use this function at the formatting func
                             indexer::index_to_identifier(index)
                                 .color(tos::COLOR_NUM_VALUE),
-                            tos::format_task_name(&task.name)
+                            tos::format_task(&task)
                         ),
                         3,
                     );
@@ -369,7 +370,13 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
 
     if !list.tasks().is_empty()
     {
-        output.insert_line(&tos::format_section_name("tasks"), 1);
+        output.insert_line(
+            &format!(
+                "{} ({})",
+                &tos::format_section_name("tasks"),
+                tos::format_index(list.tasks().len()),
+            ), 1
+        );
 
         for (index, task) in list.tasks().iter().enumerate()
         {
@@ -378,7 +385,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
                     "{}. {}",
                     indexer::index_to_identifier(index)
                         .color(tos::COLOR_NUM_VALUE),
-                    task.name.color(tos::COLOR_IDENTIFIER)
+                    tos::format_task(&task),
                 ),
                 2,
             );
@@ -429,7 +436,7 @@ pub fn show_project(file: &mut File, path: &str) -> EResult<()>
                 "{}. {}",
                 indexer::index_to_identifier(index)
                     .color(tos::COLOR_NUM_VALUE),
-                tos::format_task_name(&task.name)
+                tos::format_task(&task)
             ),
             0,
         );
