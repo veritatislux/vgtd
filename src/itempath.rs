@@ -1,6 +1,8 @@
 use std::io;
 
 use crate::EResult;
+use crate::tos::OutputFormattable;
+use crate::tos;
 
 const PATH_DIVISOR: char = '/';
 
@@ -83,6 +85,25 @@ impl TaskPath
     }
 }
 
+impl OutputFormattable for TaskPath
+{
+    fn tos_format(&self) -> String {
+        format!(
+            "{}{}/{}",
+            tos::format_list_name(&self.list_name),
+            if let Some(project_index) = self.project_index
+            {
+                format!("/{}", tos::format_index(project_index))
+            }
+            else
+            {
+                String::new()
+            },
+            tos::format_index(self.task_index)
+        )
+    }
+}
+
 pub struct ContainerPath
 {
     pub list_name: String,
@@ -127,5 +148,23 @@ impl ContainerPath
                 project_index: None,
             })
         }
+    }
+}
+
+impl OutputFormattable for ContainerPath
+{
+    fn tos_format(&self) -> String {
+        format!(
+            "{}{}",
+            tos::format_list_name(&self.list_name),
+            if let Some(project_index) = self.project_index
+            {
+                format!("/{}", tos::format_index(project_index))
+            }
+            else
+            {
+                String::new()
+            }
+        )
     }
 }

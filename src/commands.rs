@@ -13,6 +13,7 @@ use crate::indexer;
 use crate::itempath;
 use crate::tos;
 use crate::EResult;
+use crate::tos::OutputFormattable;
 
 use crate::gtd::ListContainer;
 use crate::gtd::ProjectContainer;
@@ -106,21 +107,8 @@ pub fn create_task(
     }
 
     tos::send_success(&format!(
-        // TODO: Make this path string formatting native to the path struct
-        "Task {}{}/{} ({}) created.",
-        tos::format_list_name(&task_path.list_name),
-        if let Some(project_index) = task_path.project_index
-        {
-            format!(
-                "/{}",
-                project_index.to_string().color(tos::COLOR_NUM_VALUE)
-            )
-        }
-        else
-        {
-            "".to_string()
-        },
-        list.tasks().len().to_string().color(tos::COLOR_NUM_VALUE),
+        "Task {} ({}) created.",
+        &task_path.tos_format(),
         &name
     ));
 
@@ -189,20 +177,27 @@ pub fn move_task(file: &mut File, source: &str, target: &str) -> EResult<()>
 
     let target_list = file.get_list_mut_forced(&target_path.list_name)?;
 
-    if let Some(project_index) = source_path.project_index
+    let new_index = if let Some(project_index) = target_path.project_index
     {
         let project = target_list.get_project_mut_forced(project_index)?;
 
         project.push_task(task);
+
+        project.tasks().len() - 1
     }
     else
     {
         target_list.push_task(task);
+
+        target_list.tasks().len() - 1
     };
 
     tos::send_success(&format!(
-        "Moved task {} to {} (\"{}\").",
-        source, target, task_name,
+        "Moved task {} to {}/{} ({}).",
+        &source_path.tos_format(),
+        &target_path.tos_format(),
+        tos::format_index(new_index),
+        task_name,
     ));
 
     Ok(())
@@ -248,8 +243,11 @@ pub fn move_project(file: &mut File, source: &str, target: &str)
     target_list.push_project(project);
 
     tos::send_success(&format!(
-        "Project {} moved to {} (\"{}\")",
-        &source, &target, &project_name
+        "Project {} moved to {}/{} ({})",
+        &source_path.tos_format(),
+        &target_path.tos_format(),
+        tos::format_index(target_list.projects().len() - 1),
+        tos::format_project_name(&project_name)
     ));
 
     Ok(())
@@ -328,6 +326,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
         )
         .insert_text("\n");
 
+    // TODO: Show the empty projects first
     if !list.projects().is_empty()
     {
         output.insert_line(&tos::format_section_name("projects"), 1);

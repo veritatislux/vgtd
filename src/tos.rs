@@ -19,6 +19,11 @@ pub const COLOR_TITLE: Color = Color::BrightYellow;
 pub const COLOR_GROUP: Color = Color::BrightBlue;
 pub const COLOR_IDENTIFIER: Color = Color::BrightMagenta;
 
+pub trait OutputFormattable
+{
+    fn tos_format(&self) -> String;
+}
+
 pub fn get_padding_length(level: usize) -> usize
 {
     BASE_PADDING_LEVEL + level * 2
@@ -29,6 +34,11 @@ pub fn get_padding(level: usize) -> String
     PADDING_CHAR.to_string().repeat(get_padding_length(level))
 }
 
+pub fn format_index(index: usize) -> String
+{
+    format!("{}", index.to_string().color(COLOR_NUM_VALUE))
+}
+
 pub fn format_list_name(name: &str) -> String
 {
     format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER))
@@ -36,7 +46,7 @@ pub fn format_list_name(name: &str) -> String
 
 pub fn format_project_name(name: &str) -> String
 {
-    format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER))
+    format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER).bold())
 }
 
 pub fn format_task_name(name: &str) -> String
