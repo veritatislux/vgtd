@@ -48,7 +48,10 @@ pub fn format_number(number: usize) -> String
 
 pub fn format_index(index: usize) -> String
 {
-    format!("{}", &indexer::index_to_identifier(index).color(COLOR_NUM_VALUE))
+    format!(
+        "{}",
+        &indexer::index_to_identifier(index).color(COLOR_NUM_VALUE)
+    )
 }
 
 pub fn format_list_name(name: &str) -> String

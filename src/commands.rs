@@ -329,7 +329,8 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
                 &tos::format_section_name("projects"),
                 tos::format_number(list.projects().len()),
             ),
-        1);
+            1,
+        );
 
         for (index, project) in list.projects().iter().enumerate()
         {

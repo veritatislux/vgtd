@@ -9,9 +9,12 @@ pub fn identifier_to_index(identifier: &str) -> EResult<usize>
     match str::parse::<usize>(identifier)
     {
         Ok(index) => Ok(index - 1),
-        Err(_) => Err(Box::new(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Could not parse an index.",
-        ))),
+        Err(_) =>
+        {
+            Err(Box::new(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Could not parse an index.",
+            )))
+        }
     }
 }

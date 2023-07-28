@@ -1,7 +1,7 @@
 use std::io;
 
-use crate::tos;
 use crate::indexer;
+use crate::tos;
 use crate::tos::OutputFormattable;
 use crate::EResult;
 
@@ -125,7 +125,9 @@ impl ContainerPath
         {
             Ok(Self {
                 list_name: sections[0].to_owned(),
-                project_index: Some(indexer::identifier_to_index(sections[1])?),
+                project_index: Some(indexer::identifier_to_index(
+                    sections[1],
+                )?),
             })
         }
         else
