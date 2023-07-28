@@ -12,8 +12,8 @@ use crate::gtd::Task;
 use crate::indexer;
 use crate::itempath;
 use crate::tos;
-use crate::EResult;
 use crate::tos::OutputFormattable;
+use crate::EResult;
 
 use crate::gtd::ListContainer;
 use crate::gtd::ProjectContainer;
