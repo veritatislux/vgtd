@@ -1,8 +1,8 @@
 // Terminal Output System
 
-use crate::text::Formattable;
 use crate::gtd::Task;
 use crate::gtd::TaskStatus;
+use crate::text::Formattable;
 
 use colored::Color;
 use colored::Colorize;
@@ -57,13 +57,14 @@ pub fn format_project_name(name: &str) -> String
 
 pub fn format_task_name(task: &Task) -> String
 {
-    task.name.to_titlecase().color(
-        match task.status
+    task.name
+        .to_titlecase()
+        .color(match task.status
         {
             TaskStatus::TODO => COLOR_TODO_ITEM,
             TaskStatus::DONE => COLOR_DONE_ITEM,
-        }
-    ).to_string()
+        })
+        .to_string()
 }
 
 pub fn format_task_status(status: &TaskStatus) -> String

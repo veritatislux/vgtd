@@ -375,7 +375,8 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
                 "{} ({})",
                 &tos::format_section_name("tasks"),
                 tos::format_index(list.tasks().len()),
-            ), 1
+            ),
+            1,
         );
 
         for (index, task) in list.tasks().iter().enumerate()
