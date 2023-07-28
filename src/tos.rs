@@ -2,6 +2,7 @@
 
 use crate::gtd::Task;
 use crate::gtd::TaskStatus;
+use crate::indexer;
 use crate::text::Formattable;
 
 use colored::Color;
@@ -20,10 +21,10 @@ pub const COLOR_NUM_VALUE: Color = Color::BrightGreen;
 pub const COLOR_TITLE: Color = Color::BrightYellow;
 pub const COLOR_GROUP: Color = Color::BrightBlue;
 pub const COLOR_IDENTIFIER: Color = Color::BrightMagenta;
-pub const COLOR_TODO_ITEM: Color = Color::BrightBlack;
-pub const COLOR_DONE_ITEM: Color = Color::BrightCyan;
-pub const COLOR_TODO_LABEL: Color = Color::BrightBlack;
-pub const COLOR_DONE_LABEL: Color = Color::BrightMagenta;
+pub const COLOR_DONE_ITEM: Color = Color::BrightBlack;
+pub const COLOR_DONE_LABEL: Color = Color::BrightBlack;
+pub const COLOR_TODO_ITEM: Color = Color::BrightCyan;
+pub const COLOR_TODO_LABEL: Color = Color::BrightMagenta;
 
 pub trait OutputFormattable
 {
@@ -40,9 +41,14 @@ pub fn get_padding(level: usize) -> String
     PADDING_CHAR.to_string().repeat(get_padding_length(level))
 }
 
+pub fn format_number(number: usize) -> String
+{
+    format!("{}", number.to_string().color(COLOR_NUM_VALUE))
+}
+
 pub fn format_index(index: usize) -> String
 {
-    format!("{}", index.to_string().color(COLOR_NUM_VALUE))
+    format!("{}", &indexer::index_to_identifier(index).color(COLOR_NUM_VALUE))
 }
 
 pub fn format_list_name(name: &str) -> String

@@ -1,25 +1,11 @@
 use std::io;
 
 use crate::tos;
+use crate::indexer;
 use crate::tos::OutputFormattable;
 use crate::EResult;
 
 const PATH_DIVISOR: char = '/';
-
-pub fn parse_index(source: &str) -> EResult<usize>
-{
-    match source.parse::<usize>()
-    {
-        Ok(idx) => Ok(idx),
-        Err(_) =>
-        {
-            return Err(Box::new(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Could not parse an index.",
-            )))
-        }
-    }
-}
 
 pub struct TaskPath
 {
@@ -68,10 +54,10 @@ impl TaskPath
         }
         else
         {
-            Some(parse_index(sections[1])?)
+            Some(indexer::identifier_to_index(sections[1])?)
         };
 
-        let task_index: usize = parse_index(
+        let task_index: usize = indexer::identifier_to_index(
             sections
                 .last()
                 .expect("Last path section should be the task index"),
@@ -139,7 +125,7 @@ impl ContainerPath
         {
             Ok(Self {
                 list_name: sections[0].to_owned(),
-                project_index: Some(parse_index(sections[1])?),
+                project_index: Some(indexer::identifier_to_index(sections[1])?),
             })
         }
         else

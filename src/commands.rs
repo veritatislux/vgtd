@@ -323,7 +323,13 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
     // TODO: Show the empty projects first
     if !list.projects().is_empty()
     {
-        output.insert_line(&tos::format_section_name("projects"), 1);
+        output.insert_line(
+            &format!(
+                "{} ({})",
+                &tos::format_section_name("projects"),
+                tos::format_number(list.projects().len()),
+            ),
+        1);
 
         for (index, project) in list.projects().iter().enumerate()
         {
@@ -374,7 +380,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
             &format!(
                 "{} ({})",
                 &tos::format_section_name("tasks"),
-                tos::format_index(list.tasks().len()),
+                tos::format_number(list.tasks().len()),
             ),
             1,
         );
@@ -521,8 +527,8 @@ pub fn show_all_lists(file: &mut File) -> EResult<()>
             &format!(
                 "• {} ({} tasks, {} projects)",
                 tos::format_list_name(&list.name),
-                tos::format_index(list.tasks().len()),
-                tos::format_index(list.projects().len())
+                tos::format_number(list.tasks().len()),
+                tos::format_number(list.projects().len())
             ),
             1,
         );
