@@ -101,9 +101,9 @@ pub fn create_task(
     }
 
     tos::send_success(&format!(
-        "Task {} ({}) created.",
+        "Task {} created at {}.",
+        &name,
         &task_path.tos_format(),
-        &name
     ));
 
     Ok(())
