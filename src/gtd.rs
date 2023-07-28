@@ -7,17 +7,30 @@ use serde::Serialize;
 use crate::EResult;
 
 #[derive(Serialize, Deserialize)]
+pub enum TaskStatus
+{
+    TODO,
+    DONE,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct Task
 {
     pub name: String,
     pub description: Option<String>,
+    pub status: TaskStatus
 }
 
 impl Task
 {
     pub fn new(name: String, description: Option<String>) -> Self
     {
-        Self { name, description }
+        Self { name, description, status: TaskStatus::TODO }
+    }
+
+    pub fn done(&self) -> bool
+    {
+        matches!(self.status, TaskStatus::DONE)
     }
 }
 
@@ -90,6 +103,25 @@ pub trait TaskContainer
     fn remove_task(&mut self, index: usize) -> Task
     {
         self.tasks_mut().remove(index)
+    }
+
+    fn tasks_completed(&self) -> usize
+    {
+        self
+            .tasks()
+            .iter()
+            .filter(|t| t.done())
+            .count()
+    }
+
+    fn tasks_completion(&self) -> f64
+    {
+        (self.tasks_completed() as f64) / (self.tasks().len() as f64)
+    }
+
+    fn all_tasks_done(&self) -> bool
+    {
+        self.tasks_completed() == self.tasks().len()
     }
 }
 
@@ -194,6 +226,25 @@ pub trait ProjectContainer
     fn remove_project(&mut self, index: usize) -> Project
     {
         self.projects_mut().remove(index)
+    }
+
+    fn projects_completed(&self) -> usize
+    {
+        self
+            .projects()
+            .iter()
+            .filter(|p| p.all_tasks_done())
+            .count()
+    }
+
+    fn projects_completion(&self) -> f64
+    {
+        (self.projects_completed() as f64) / (self.projects().len() as f64)
+    }
+
+    fn all_projects_done(&self) -> bool
+    {
+        self.projects_completed() == self.projects().len()
     }
 }
 
