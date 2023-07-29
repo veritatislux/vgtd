@@ -6,8 +6,8 @@ use serde::Serialize;
 
 use crate::EResult;
 
-#[derive(Serialize, Deserialize)]
-pub enum TaskStatus
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum Status
 {
     TODO,
     DONE,
@@ -18,7 +18,7 @@ pub struct Task
 {
     pub name: String,
     pub description: Option<String>,
-    pub status: TaskStatus,
+    pub status: Status,
 }
 
 impl Task
@@ -28,11 +28,11 @@ impl Task
         Self {
             name,
             description,
-            status: TaskStatus::TODO,
+            status: Status::TODO,
         }
     }
 
-    pub fn done(&self) -> bool { matches!(self.status, TaskStatus::DONE) }
+    pub fn done(&self) -> bool { matches!(self.status, Status::DONE) }
 }
 
 pub trait TaskContainer
@@ -136,6 +136,18 @@ impl Project
         Self {
             name,
             tasks: vec![],
+        }
+    }
+
+    pub fn status(&self) -> Status
+    {
+        if self.tasks().iter().any(|t| !t.done())
+        {
+            Status::TODO
+        }
+        else
+        {
+            Status::DONE
         }
     }
 }

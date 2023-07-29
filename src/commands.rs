@@ -232,6 +232,8 @@ pub fn move_project(file: &mut File, source: &str, target: &str)
 
     let project_name = project.name.clone();
 
+    let project_status = project.status();
+
     let target_list = file.get_list_mut_forced(&target_path.list_name)?;
 
     target_list.push_project(project);
@@ -241,7 +243,7 @@ pub fn move_project(file: &mut File, source: &str, target: &str)
         &source_path.tos_format(),
         &target_path.tos_format(),
         tos::format_index(target_list.projects().len() - 1),
-        tos::format_project_name(&project_name)
+        tos::format_project(&project_name, &project_status),
     ));
 
     Ok(())
@@ -325,9 +327,14 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
     {
         output.insert_line(
             &format!(
-                "{} ({})",
+                "{} {}/{} ({}%)",
                 &tos::format_section_name("projects"),
+                tos::format_number(list.projects_completed()),
                 tos::format_number(list.projects().len()),
+                tos::format_number(format!(
+                    "{:.1}",
+                    list.projects_completion() * 100.0
+                )),
             ),
             1,
         );
@@ -339,7 +346,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
                     "{}. {} ({} tasks)",
                     indexer::index_to_identifier(index)
                         .color(tos::COLOR_NUM_VALUE),
-                    tos::format_project_name(&project.name),
+                    tos::format_project(&project.name, &project.status()),
                     project
                         .tasks()
                         .len()
@@ -379,9 +386,14 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
     {
         output.insert_line(
             &format!(
-                "{} ({})",
+                "{} {}/{} ({}%)",
                 &tos::format_section_name("tasks"),
+                tos::format_number(list.tasks_completed()),
                 tos::format_number(list.tasks().len()),
+                tos::format_number(format!(
+                    "{:.1}",
+                    list.tasks_completion() * 100.0
+                )),
             ),
             1,
         );
@@ -431,7 +443,7 @@ pub fn show_project(file: &mut File, path: &str) -> EResult<()>
         .insert_line(
             &format!(
                 "Contents of project {}",
-                tos::format_project_name(&project.name)
+                tos::format_project(&project.name, &project.status()),
             ),
             0,
         )
@@ -471,6 +483,8 @@ pub fn create_project(
 
     let project_name = project.name.clone();
 
+    let project_status = project.status();
+
     list.push_project(project);
 
     tos::send_success(&format!(
@@ -479,7 +493,7 @@ pub fn create_project(
         (list.projects().len() - 1)
             .to_string()
             .color(tos::COLOR_NUM_VALUE),
-        tos::format_project_name(&project_name),
+        tos::format_project(&project_name, &project_status),
     ));
 
     Ok(())
@@ -493,7 +507,9 @@ pub fn remove_project(file: &mut File, path: &str) -> EResult<()>
 
     if let Some(index) = project_path.project_index
     {
-        let project_name = list.get_project_forced(index)?.name.clone();
+        let project = list.get_project_forced(index)?;
+        let project_name = project.name.clone();
+        let project_status = project.status();
 
         list.remove_project(index);
 
@@ -501,7 +517,7 @@ pub fn remove_project(file: &mut File, path: &str) -> EResult<()>
             "Project {}/{} ({}) removed.",
             tos::format_list_name(&project_path.list_name),
             index.to_string().color(tos::COLOR_NUM_VALUE),
-            tos::format_project_name(&project_name)
+            tos::format_project(&project_name, &project_status),
         ));
     }
 

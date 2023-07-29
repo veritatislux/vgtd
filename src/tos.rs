@@ -1,7 +1,8 @@
 // Terminal Output System
 
+use crate::gtd::Project;
+use crate::gtd::Status;
 use crate::gtd::Task;
-use crate::gtd::TaskStatus;
 use crate::indexer;
 use crate::text::Formattable;
 
@@ -41,7 +42,7 @@ pub fn get_padding(level: usize) -> String
     PADDING_CHAR.to_string().repeat(get_padding_length(level))
 }
 
-pub fn format_number(number: usize) -> String
+pub fn format_number(number: impl ToString) -> String
 {
     format!("{}", number.to_string().color(COLOR_NUM_VALUE))
 }
@@ -59,9 +60,36 @@ pub fn format_list_name(name: &str) -> String
     format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER))
 }
 
-pub fn format_project_name(name: &str) -> String
+pub fn format_status(status: &Status) -> String
 {
-    format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER).bold())
+    match status
+    {
+        Status::TODO => "TODO".color(COLOR_TODO_LABEL).bold().to_string(),
+        Status::DONE => "DONE".color(COLOR_DONE_LABEL).bold().to_string(),
+    }
+}
+
+pub fn format_project_name(name: &str, status: &Status) -> String
+{
+    format!(
+        "{}",
+        name.to_titlecase()
+            .color(match status
+            {
+                Status::TODO => COLOR_TODO_ITEM,
+                Status::DONE => COLOR_DONE_ITEM,
+            })
+            .bold()
+    )
+}
+
+pub fn format_project(name: &str, status: &Status) -> String
+{
+    format!(
+        "{} {}",
+        format_status(status),
+        format_project_name(name, status),
+    )
 }
 
 pub fn format_task_name(task: &Task) -> String
@@ -70,26 +98,17 @@ pub fn format_task_name(task: &Task) -> String
         .to_titlecase()
         .color(match task.status
         {
-            TaskStatus::TODO => COLOR_TODO_ITEM,
-            TaskStatus::DONE => COLOR_DONE_ITEM,
+            Status::TODO => COLOR_TODO_ITEM,
+            Status::DONE => COLOR_DONE_ITEM,
         })
         .to_string()
-}
-
-pub fn format_task_status(status: &TaskStatus) -> String
-{
-    match status
-    {
-        TaskStatus::TODO => "TODO".color(COLOR_TODO_LABEL).bold().to_string(),
-        TaskStatus::DONE => "DONE".color(COLOR_DONE_LABEL).bold().to_string(),
-    }
 }
 
 pub fn format_task(task: &Task) -> String
 {
     format!(
         "{} {}",
-        format_task_status(&task.status),
+        format_status(&task.status),
         format_task_name(&task),
     )
 }
