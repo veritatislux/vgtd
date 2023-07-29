@@ -343,15 +343,16 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
         {
             output.insert_line(
                 &format!(
-                    "{}. {} ({} tasks)",
+                    "{}. {} {}/{} ({}%)",
                     indexer::index_to_identifier(index)
                         .color(tos::COLOR_NUM_VALUE),
                     tos::format_project(&project.name, &project.status()),
-                    project
-                        .tasks()
-                        .len()
-                        .to_string()
-                        .color(tos::COLOR_NUM_VALUE)
+                    tos::format_number(project.tasks_completed()),
+                    tos::format_number(project.tasks().len()),
+                    tos::format_number(format!(
+                        "{:.1}",
+                        project.tasks_completion() * 100.0
+                    )),
                 ),
                 2,
             );
