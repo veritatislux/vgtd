@@ -10,6 +10,7 @@ use std::error::Error;
 
 use clap::Parser;
 use clap::Subcommand;
+use gtd::Status;
 
 use crate::commands::GTD_FILE_PATH;
 
@@ -108,6 +109,15 @@ pub enum TaskSubcommand
         /// The path to the final location of the task
         destination: String,
     },
+
+    /// Change the status of a task to a new one
+    Mark
+    {
+        /// The path to the task to be modified
+        path: String,
+        /// The new status for the task (default: DONE)
+        new_status: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -187,6 +197,14 @@ pub fn parse_cli_arguments() -> EResult<()>
                     source,
                     destination,
                 } => commands::move_task(&mut file, &source, &destination)?,
+                TaskSubcommand::Mark { path, new_status } =>
+                {
+                    commands::mark_task(
+                        &mut file,
+                        &path,
+                        Status::parse(&new_status)?,
+                    )?
+                }
             }
         }
         GTDSubcommand::List { sub } =>

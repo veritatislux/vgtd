@@ -8,6 +8,7 @@ use crate::gtd;
 use crate::gtd::File;
 use crate::gtd::List;
 use crate::gtd::Project;
+use crate::gtd::Status;
 use crate::gtd::Task;
 use crate::indexer;
 use crate::itempath;
@@ -141,6 +142,38 @@ pub fn remove_task(file: &mut File, path: String) -> EResult<()>
             &path, &task_name
         ));
     };
+
+    Ok(())
+}
+
+pub fn mark_task(
+    file: &mut File,
+    path: &str,
+    new_status: Status,
+) -> EResult<()>
+{
+    let task_path = itempath::TaskPath::parse(path)?;
+
+    let list = file.get_list_mut_forced(&task_path.list_name)?;
+
+    let task = if let Some(project_index) = task_path.project_index
+    {
+        list.get_project_mut_forced(project_index)?
+            .get_task_mut_forced(task_path.task_index)?
+    }
+    else
+    {
+        list.get_task_mut_forced(task_path.task_index)?
+    };
+
+    task.status = new_status;
+
+    tos::send_success(&format!(
+        "Status of task {} ({}) changed to {}.",
+        &task_path.tos_format(),
+        tos::format_task_name(&task),
+        tos::format_status(&new_status),
+    ));
 
     Ok(())
 }

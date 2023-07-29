@@ -1,6 +1,7 @@
 use std::fs;
 use std::io;
 
+use clap::builder::EnumValueParser;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -11,6 +12,35 @@ pub enum Status
 {
     TODO,
     DONE,
+}
+
+impl Status
+{
+    pub fn parse(source: &Option<String>) -> EResult<Self>
+    {
+        match source
+        {
+            None => Ok(Status::DONE),
+            Some(status) =>
+            {
+                if status.is_empty() || status == "done"
+                {
+                    Ok(Status::DONE)
+                }
+                else if status == "todo"
+                {
+                    Ok(Status::TODO)
+                }
+                else
+                {
+                    Err(Box::new(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("No status matches \"{}\".", status),
+                    )))
+                }
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
