@@ -360,14 +360,12 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
     {
         output.insert_line(
             &format!(
-                "{} {}/{} ({}%)",
-                &tos::format_section_name("projects"),
-                tos::format_number(list.projects_completed()),
-                tos::format_number(list.projects().len()),
-                tos::format_number(format!(
-                    "{:.1}",
-                    list.projects_completion() * 100.0
-                )),
+                "{} {}",
+                tos::format_section_name("projects"),
+                tos::format_progress(
+                    list.projects_completed(),
+                    list.projects().len()
+                ),
             ),
             1,
         );
@@ -376,16 +374,20 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
         {
             output.insert_line(
                 &format!(
-                    "{}. {} {}/{} ({}%)",
-                    indexer::index_to_identifier(index)
-                        .color(tos::COLOR_NUM_VALUE),
+                    "{}. {} {}",
+                    tos::format_index(index),
                     tos::format_project(&project.name, &project.status()),
-                    tos::format_number(project.tasks_completed()),
-                    tos::format_number(project.tasks().len()),
-                    tos::format_number(format!(
-                        "{:.1}",
-                        project.tasks_completion() * 100.0
-                    )),
+                    if project.tasks().is_empty()
+                    {
+                        "(No tasks)".to_string()
+                    }
+                    else
+                    {
+                        tos::format_progress(
+                            project.tasks_completed(),
+                            project.tasks().len(),
+                        )
+                    },
                 ),
                 2,
             );
@@ -420,14 +422,12 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
     {
         output.insert_line(
             &format!(
-                "{} {}/{} ({}%)",
-                &tos::format_section_name("tasks"),
-                tos::format_number(list.tasks_completed()),
-                tos::format_number(list.tasks().len()),
-                tos::format_number(format!(
-                    "{:.1}",
-                    list.tasks_completion() * 100.0
-                )),
+                "{} {}",
+                tos::format_section_name("tasks"),
+                tos::format_progress(
+                    list.tasks_completed(),
+                    list.tasks().len()
+                ),
             ),
             1,
         );

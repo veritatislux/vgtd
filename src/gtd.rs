@@ -141,18 +141,6 @@ pub trait TaskContainer
         self.tasks().iter().filter(|t| t.done()).count()
     }
 
-    fn tasks_completion(&self) -> f64
-    {
-        if self.tasks().is_empty()
-        {
-            0.0
-        }
-        else
-        {
-            (self.tasks_completed() as f64) / (self.tasks().len() as f64)
-        }
-    }
-
     fn all_tasks_done(&self) -> bool
     {
         self.tasks_completed() == self.tasks().len()
@@ -284,18 +272,6 @@ pub trait ProjectContainer
             .iter()
             .filter(|p| p.all_tasks_done())
             .count()
-    }
-
-    fn projects_completion(&self) -> f64
-    {
-        if self.projects().is_empty()
-        {
-            0.0
-        }
-        else
-        {
-            (self.projects_completed() as f64) / (self.projects().len() as f64)
-        }
     }
 
     fn all_projects_done(&self) -> bool

@@ -60,6 +60,16 @@ pub fn format_list_name(name: &str) -> String
     format!("{}", name.to_titlecase().color(COLOR_IDENTIFIER))
 }
 
+pub fn format_progress(done: usize, total: usize) -> String
+{
+    format!(
+        "{}/{} ({}%)",
+        format_number(done),
+        format_number(total),
+        format_number(format!("{:.1}", done as f64 / total as f64 * 100.0))
+    )
+}
+
 pub fn format_status(status: &Status) -> String
 {
     match status
