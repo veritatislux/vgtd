@@ -143,7 +143,14 @@ pub trait TaskContainer
 
     fn all_tasks_done(&self) -> bool
     {
-        self.tasks_completed() == self.tasks().len()
+        if self.tasks().is_empty()
+        {
+            return false;
+        }
+        else
+        {
+            self.tasks_completed() == self.tasks().len()
+        }
     }
 }
 
