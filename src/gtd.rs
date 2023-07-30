@@ -143,7 +143,14 @@ pub trait TaskContainer
 
     fn tasks_completion(&self) -> f64
     {
-        (self.tasks_completed() as f64) / (self.tasks().len() as f64)
+        if self.tasks().is_empty()
+        {
+            0.0
+        }
+        else
+        {
+            (self.tasks_completed() as f64) / (self.tasks().len() as f64)
+        }
     }
 
     fn all_tasks_done(&self) -> bool
@@ -171,7 +178,11 @@ impl Project
 
     pub fn status(&self) -> Status
     {
-        if self.tasks().iter().any(|t| !t.done())
+        if self.tasks().is_empty()
+        {
+            Status::TODO
+        }
+        else if self.tasks().iter().any(|t| !t.done())
         {
             Status::TODO
         }
@@ -277,7 +288,14 @@ pub trait ProjectContainer
 
     fn projects_completion(&self) -> f64
     {
-        (self.projects_completed() as f64) / (self.projects().len() as f64)
+        if self.projects().is_empty()
+        {
+            0.0
+        }
+        else
+        {
+            (self.projects_completed() as f64) / (self.projects().len() as f64)
+        }
     }
 
     fn all_projects_done(&self) -> bool
