@@ -1,7 +1,6 @@
 use std::fs;
 use std::io;
 
-use clap::builder::EnumValueParser;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -23,6 +22,8 @@ impl Status
             None => Ok(Status::DONE),
             Some(status) =>
             {
+                let status = status.to_lowercase();
+
                 if status.is_empty() || status == "done"
                 {
                     Ok(Status::DONE)
