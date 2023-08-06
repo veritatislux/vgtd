@@ -1,6 +1,5 @@
 // Terminal Output System
 
-use crate::gtd::Project;
 use crate::gtd::Status;
 use crate::gtd::Task;
 use crate::indexer;
