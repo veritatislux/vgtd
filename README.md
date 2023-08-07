@@ -189,4 +189,6 @@ you can always use the `help` subcommand.
 - `vgtd help` will summarize the major commands.
 - `vgtd list help` will summarize the commands used to deal with lists.
 - `vgtd task help` will summarize the commands used to deal with tasks.
-- And so on...
+- `vtd task create help` will provide information about the `task create`
+  command.
+- And so on.
