@@ -1,9 +1,9 @@
-use voltgtd;
+use vgtd;
 
 fn main()
 {
-    if let Err(error) = voltgtd::parse_cli_arguments()
+    if let Err(error) = vgtd::parse_cli_arguments()
     {
-        voltgtd::tos::send_error(&error.to_string())
+        vgtd::tos::send_error(&error.to_string())
     }
 }
