@@ -1,5 +1,5 @@
 [package]
-name = "voltgtd"
+name = "vgtd"
 description = "Volatus' GTD utility tool"
 authors = ["Volatus"]
 version = "1.0.0"
