@@ -2,7 +2,7 @@
 name = "vgtd"
 description = "Volatus' GTD utility tool"
 authors = ["Volatus"]
-version = "1.0.0"
+version = "1.0.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/veritatislux/vgtd"
