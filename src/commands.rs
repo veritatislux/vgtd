@@ -338,7 +338,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
 
     if list.tasks().is_empty() && list.projects().is_empty()
     {
-        tos::send_success(&format!("List {formatted_name} is empty."));
+        tos::send_info(&format!("List {formatted_name} is empty."));
 
         return Ok(());
     }
