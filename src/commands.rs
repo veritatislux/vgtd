@@ -471,6 +471,16 @@ pub fn show_project(file: &mut File, path: &str) -> EResult<()>
 
     let project = list.get_project_forced(project_index)?;
 
+    if project.tasks().is_empty()
+    {
+        tos::send_info(&format!(
+            "Project {} is empty.",
+            tos::format_project_name(&project.name, &project.status())
+        ));
+
+        return Ok(());
+    }
+
     let mut output = tos::OutputBlock::new();
 
     output
