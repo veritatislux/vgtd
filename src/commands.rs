@@ -20,9 +20,7 @@ use crate::gtd::ListContainer;
 use crate::gtd::ProjectContainer;
 use crate::gtd::TaskContainer;
 
-pub const GTD_FILE_PATH: &str = ".gtd.toml";
-
-pub fn write_workspace_defaults() -> EResult<()>
+pub fn write_workspace_defaults(path: &str) -> EResult<()>
 {
     let basic_structure = File {
         lists: vec![
@@ -32,14 +30,14 @@ pub fn write_workspace_defaults() -> EResult<()>
         ],
     };
 
-    basic_structure.write_to_file(GTD_FILE_PATH)?;
+    basic_structure.write_to_file(path)?;
 
     Ok(())
 }
 
-pub fn reset_workspace() -> EResult<()>
+pub fn reset_workspace(path: &str) -> EResult<()>
 {
-    if !path::Path::new(GTD_FILE_PATH).exists()
+    if !path::Path::new(path).exists()
     {
         return Err(Box::new(io::Error::new(
             ErrorKind::NotFound,
@@ -47,16 +45,16 @@ pub fn reset_workspace() -> EResult<()>
         )));
     }
 
-    write_workspace_defaults()?;
+    write_workspace_defaults(path)?;
 
     tos::send_success("The workspace has been reset.");
 
     Ok(())
 }
 
-pub fn initialize_workspace() -> EResult<()>
+pub fn initialize_workspace(path: &str) -> EResult<()>
 {
-    if path::Path::new(GTD_FILE_PATH).exists()
+    if path::Path::new(path).exists()
     {
         return Err(Box::new(io::Error::new(
             ErrorKind::AlreadyExists,
@@ -64,9 +62,9 @@ pub fn initialize_workspace() -> EResult<()>
         )));
     }
 
-    write_workspace_defaults()?;
+    write_workspace_defaults(path)?;
 
-    tos::send_success("New workspace initialized in this directory.");
+    tos::send_success("New workspace initialized in the target directory.");
 
     Ok(())
 }
@@ -338,7 +336,7 @@ pub fn show_list(file: &mut File, name: &str, all: bool) -> EResult<()>
 
     if list.tasks().is_empty() && list.projects().is_empty()
     {
-        tos::send_success(&format!("List {formatted_name} is empty."));
+        tos::send_info(&format!("List {formatted_name} is empty."));
 
         return Ok(());
     }
@@ -471,6 +469,16 @@ pub fn show_project(file: &mut File, path: &str) -> EResult<()>
 
     let project = list.get_project_forced(project_index)?;
 
+    if project.tasks().is_empty()
+    {
+        tos::send_info(&format!(
+            "Project {} is empty.",
+            tos::format_project_name(&project.name, &project.status())
+        ));
+
+        return Ok(());
+    }
+
     let mut output = tos::OutputBlock::new();
 
     output
@@ -562,14 +570,14 @@ pub fn show_all_lists(file: &mut File) -> EResult<()>
 {
     if file.lists().is_empty()
     {
-        tos::send_info(&format!("There are no lists in this workspace."));
+        tos::send_info(&format!("There are no lists in the workspace."));
         return Ok(());
     }
 
     let mut output = tos::OutputBlock::new();
 
     output
-        .insert_line("Lists in the current workspace", 0)
+        .insert_line("Lists in the workspace", 0)
         .insert_text("\n");
 
     for list in file.lists.iter()
