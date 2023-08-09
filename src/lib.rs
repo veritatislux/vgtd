@@ -1,4 +1,5 @@
 mod commands;
+mod dirs;
 mod file;
 mod gtd;
 mod indexer;
@@ -11,8 +12,6 @@ use std::error::Error;
 use clap::Parser;
 use clap::Subcommand;
 use gtd::Status;
-
-use crate::commands::GTD_FILE_PATH;
 
 pub type EResult<T> = Result<T, Box<dyn Error>>;
 
@@ -157,23 +156,29 @@ pub struct Args
 {
     #[command(subcommand)]
     sub: GTDSubcommand,
+
+    /// If provided, initialize the global workspace
+    #[arg(long, short)]
+    global: bool,
 }
 
 pub fn parse_cli_arguments() -> EResult<()>
 {
     let args = Args::parse();
 
+    let file_path = dirs::get_workspace_file_path(args.global)?;
+
     if let GTDSubcommand::Init = args.sub
     {
-        return commands::initialize_workspace();
+        return commands::initialize_workspace(&file_path);
     }
 
     if let GTDSubcommand::Reset = args.sub
     {
-        return commands::reset_workspace();
+        return commands::reset_workspace(&file_path);
     }
 
-    let mut file = file::parse(GTD_FILE_PATH)?;
+    let mut file = file::parse(&file_path)?;
 
     match args.sub
     {
@@ -252,5 +257,5 @@ pub fn parse_cli_arguments() -> EResult<()>
         {}
     };
 
-    file.write_to_file(GTD_FILE_PATH)
+    file.write_to_file(&file_path)
 }

@@ -20,9 +20,7 @@ use crate::gtd::ListContainer;
 use crate::gtd::ProjectContainer;
 use crate::gtd::TaskContainer;
 
-pub const GTD_FILE_PATH: &str = ".gtd.toml";
-
-pub fn write_workspace_defaults() -> EResult<()>
+pub fn write_workspace_defaults(path: &str) -> EResult<()>
 {
     let basic_structure = File {
         lists: vec![
@@ -32,14 +30,14 @@ pub fn write_workspace_defaults() -> EResult<()>
         ],
     };
 
-    basic_structure.write_to_file(GTD_FILE_PATH)?;
+    basic_structure.write_to_file(path)?;
 
     Ok(())
 }
 
-pub fn reset_workspace() -> EResult<()>
+pub fn reset_workspace(path: &str) -> EResult<()>
 {
-    if !path::Path::new(GTD_FILE_PATH).exists()
+    if !path::Path::new(path).exists()
     {
         return Err(Box::new(io::Error::new(
             ErrorKind::NotFound,
@@ -47,16 +45,16 @@ pub fn reset_workspace() -> EResult<()>
         )));
     }
 
-    write_workspace_defaults()?;
+    write_workspace_defaults(path)?;
 
     tos::send_success("The workspace has been reset.");
 
     Ok(())
 }
 
-pub fn initialize_workspace() -> EResult<()>
+pub fn initialize_workspace(path: &str) -> EResult<()>
 {
-    if path::Path::new(GTD_FILE_PATH).exists()
+    if path::Path::new(path).exists()
     {
         return Err(Box::new(io::Error::new(
             ErrorKind::AlreadyExists,
@@ -64,7 +62,7 @@ pub fn initialize_workspace() -> EResult<()>
         )));
     }
 
-    write_workspace_defaults()?;
+    write_workspace_defaults(path)?;
 
     tos::send_success("New workspace initialized in this directory.");
 
