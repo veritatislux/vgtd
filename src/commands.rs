@@ -64,7 +64,7 @@ pub fn initialize_workspace(path: &str) -> EResult<()>
 
     write_workspace_defaults(path)?;
 
-    tos::send_success("New workspace initialized in this directory.");
+    tos::send_success("New workspace initialized in the target directory.");
 
     Ok(())
 }
@@ -570,14 +570,14 @@ pub fn show_all_lists(file: &mut File) -> EResult<()>
 {
     if file.lists().is_empty()
     {
-        tos::send_info(&format!("There are no lists in this workspace."));
+        tos::send_info(&format!("There are no lists in the workspace."));
         return Ok(());
     }
 
     let mut output = tos::OutputBlock::new();
 
     output
-        .insert_line("Lists in the current workspace", 0)
+        .insert_line("Lists in the workspace", 0)
         .insert_text("\n");
 
     for list in file.lists.iter()
