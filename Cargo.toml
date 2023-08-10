@@ -11,9 +11,6 @@ repository = "https://github.com/veritatislux/vgtd"
 
 [dependencies]
 clap = { version = "4.2", features = ["derive"] }
-crossterm = "0.26"
-lazy_static = "1.4"
-regex = "1.8"
 toml = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 colored = "2.0"
