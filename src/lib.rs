@@ -15,6 +15,35 @@ use gtd::Status;
 
 pub type EResult<T> = Result<T, Box<dyn Error>>;
 
+#[derive(Subcommand)]
+pub enum ContextSubcommand
+{
+    /// Create a context within the item
+    Create
+    {
+        /// The item path to create the context at
+        path: String,
+        /// The context's name
+        name: String,
+    },
+
+    /// Remove a context within the item
+    Remove
+    {
+        /// The item path of the context's container
+        path: String,
+        /// The name of the context to be removed
+        name: String,
+    },
+
+    /// List the contexts inside the item
+    List
+    {
+        /// The item path of the context's container
+        path: String,
+    },
+}
+
 /// Commands to deal with projects
 #[derive(Subcommand)]
 pub enum ProjectSubcommand
@@ -24,6 +53,7 @@ pub enum ProjectSubcommand
     {
         /// The path to create the project at
         path: String,
+        /// The name of the project to be created
         name: String,
     },
 
@@ -117,6 +147,12 @@ pub enum TaskSubcommand
         /// The new status for the task (default: DONE)
         new_status: Option<String>,
     },
+
+    Context
+    {
+        #[command(subcommand)]
+        sub: ContextSubcommand,
+    },
 }
 
 #[derive(Subcommand)]
@@ -209,6 +245,20 @@ pub fn parse_cli_arguments() -> EResult<()>
                         &path,
                         Status::parse(&new_status)?,
                     )?
+                }
+                TaskSubcommand::Context { sub } =>
+                {
+                    match sub
+                    {
+                        ContextSubcommand::Create { path, name } =>
+                        {
+                            commands::create_context_in_task(
+                                &mut file, &path, &name,
+                            )?
+                        }
+                        _ =>
+                        {}
+                    }
                 }
             }
         }

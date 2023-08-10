@@ -16,6 +16,7 @@ use crate::tos;
 use crate::tos::OutputFormattable;
 use crate::EResult;
 
+use crate::gtd::ContextContainer;
 use crate::gtd::ListContainer;
 use crate::gtd::ProjectContainer;
 use crate::gtd::TaskContainer;
@@ -65,6 +66,37 @@ pub fn initialize_workspace(path: &str) -> EResult<()>
     write_workspace_defaults(path)?;
 
     tos::send_success("New workspace initialized in the target directory.");
+
+    Ok(())
+}
+
+pub fn create_context_in_task(
+    file: &mut File,
+    path: &str,
+    name: &str,
+) -> EResult<()>
+{
+    let task_path = itempath::TaskPath::parse(path)?;
+
+    let list = file.get_list_mut_forced(&task_path.list_name)?;
+
+    let task = if let Some(project_index) = task_path.project_index
+    {
+        list.get_project_mut_forced(project_index)?
+            .get_task_mut_forced(task_path.task_index)?
+    }
+    else
+    {
+        list.get_task_mut_forced(task_path.task_index)?
+    };
+
+    task.push_context(name.to_owned());
+
+    tos::send_success(&format!(
+        "Context {} created at {}.",
+        &name,
+        &task_path.tos_format()
+    ));
 
     Ok(())
 }
