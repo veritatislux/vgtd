@@ -44,12 +44,37 @@ impl Status
     }
 }
 
+pub trait ContextContainer
+{
+    fn contexts(&self) -> &Vec<String>;
+
+    fn contexts_mut(&mut self) -> &mut Vec<String>;
+
+    fn has_context(&self, target: &str) -> bool
+    {
+        self.contexts().iter().any(|c| c == target)
+    }
+
+    fn push_context(&mut self, context: String) -> ()
+    {
+        self.contexts_mut().push(context);
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Task
 {
     pub name: String,
     pub description: Option<String>,
     pub status: Status,
+    pub contexts: Vec<String>,
+}
+
+impl ContextContainer for Task
+{
+    fn contexts(&self) -> &Vec<String> { &self.contexts }
+
+    fn contexts_mut(&mut self) -> &mut Vec<String> { &mut self.contexts }
 }
 
 impl Task
@@ -60,6 +85,7 @@ impl Task
             name,
             description,
             status: Status::TODO,
+            contexts: vec![],
         }
     }
 
@@ -160,6 +186,7 @@ pub struct Project
 {
     pub name: String,
     tasks: Vec<Task>,
+    contexts: Vec<String>,
 }
 
 impl Project
@@ -169,6 +196,7 @@ impl Project
         Self {
             name,
             tasks: vec![],
+            contexts: vec![],
         }
     }
 
@@ -187,6 +215,13 @@ impl Project
             Status::DONE
         }
     }
+}
+
+impl ContextContainer for Project
+{
+    fn contexts(&self) -> &Vec<String> { &self.contexts }
+
+    fn contexts_mut(&mut self) -> &mut Vec<String> { &mut self.contexts }
 }
 
 impl TaskContainer for Project
@@ -294,6 +329,7 @@ pub struct List
     pub name: String,
     tasks: Vec<Task>,
     projects: Vec<Project>,
+    contexts: Vec<String>,
 }
 
 impl List
@@ -304,8 +340,16 @@ impl List
             name,
             tasks: vec![],
             projects: vec![],
+            contexts: vec![],
         }
     }
+}
+
+impl ContextContainer for List
+{
+    fn contexts(&self) -> &Vec<String> { &self.contexts }
+
+    fn contexts_mut(&mut self) -> &mut Vec<String> { &mut self.contexts }
 }
 
 impl TaskContainer for List
