@@ -180,6 +180,54 @@ you can move a project from a list to another:
 vgtd project move "inbox/1" "next" # Move the first project of the "inbox" list to the "next" list
 ```
 
+### Global mode
+
+The initial and fundamental purpose of vGTD is to work with local repositories
+of tasks, so you can control individual projects more easily. However, it is
+often useful to be able to have a user-wide repository of tasks, so you can,
+for instance, store your personal tasks and projects.
+
+To address that necessity, vGTD has brought the **Global Workspace** feature to
+3.0.
+
+To access the Global Workspace from anywhere, just use any command like you
+normally would, but add the `--global` option (or its shortform `-g`) after the
+executable's name.
+
+For instance, the command
+
+```bash
+vgtd task create inbox "Some personal task"
+```
+
+Becomes
+
+```bash
+vgtd --global task create inbox "Some personal task"
+```
+
+This won't create the task in the local workspace, but in the global one
+(unless you are in the global workspace's directory, in which case they are the
+same).
+
+<details>
+<summary><h4>Location of the Global Workspace file</h4></summary>
+
+vGTD aims to be a cross-platform tool, and due to differences in the systems we
+support, the Global Workspace file will be in a different place depending on
+what OS you're using. This support comes from the `directories` crate, so the
+following table is extracted directly from there (with the addition that we
+appended the `.gtd.toml` file name to the end of the paths):
+
+| Platform | Path                               |
+|----------|------------------------------------|
+| Linux    | `$HOME/.gtd.toml`                  |
+| macOS    | `$HOME/.gtd.toml`                  |
+| Windows  | `{FOLDERID_Profile}/.gtd.toml`[^1] |
+
+[^1]: This usually means `C:\Users\<username>\.gtd.toml`.
+</details>
+
 ### Getting help
 
 If you forget the syntax of a command, want to know the meaning of an argument,
