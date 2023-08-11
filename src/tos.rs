@@ -21,6 +21,7 @@ pub const COLOR_NUM_VALUE: Color = Color::BrightGreen;
 pub const COLOR_TITLE: Color = Color::BrightYellow;
 pub const COLOR_GROUP: Color = Color::BrightBlue;
 pub const COLOR_IDENTIFIER: Color = Color::BrightMagenta;
+pub const COLOR_CONTEXT: Color = Color::BrightCyan;
 pub const COLOR_DONE_ITEM: Color = Color::BrightBlack;
 pub const COLOR_DONE_LABEL: Color = Color::BrightBlack;
 pub const COLOR_TODO_ITEM: Color = Color::BrightCyan;
@@ -39,6 +40,11 @@ pub fn get_padding_length(level: usize) -> usize
 pub fn get_padding(level: usize) -> String
 {
     PADDING_CHAR.to_string().repeat(get_padding_length(level))
+}
+
+pub fn format_context(name: &str) -> String
+{
+    format!("@{}", name).color(COLOR_CONTEXT).to_string()
 }
 
 pub fn format_number(number: impl ToString) -> String

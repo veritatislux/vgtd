@@ -55,6 +55,11 @@ pub trait ContextContainer
         self.contexts().iter().any(|c| c == target)
     }
 
+    fn find_context(&self, target: &str) -> Option<usize>
+    {
+        self.contexts().iter().position(|c| c == target)
+    }
+
     fn push_context(&mut self, context: String) -> ()
     {
         self.contexts_mut().push(context);

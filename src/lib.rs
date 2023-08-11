@@ -256,6 +256,16 @@ pub fn parse_cli_arguments() -> EResult<()>
                                 &mut file, &path, &name,
                             )?
                         }
+                        ContextSubcommand::Remove { path, name } =>
+                        {
+                            commands::remove_context_in_task(
+                                &mut file, &path, &name,
+                            )?
+                        }
+                        ContextSubcommand::List { path } =>
+                        {
+                            commands::list_contexts_in_task(&mut file, &path)?
+                        }
                         _ =>
                         {}
                     }

@@ -90,13 +90,104 @@ pub fn create_context_in_task(
         list.get_task_mut_forced(task_path.task_index)?
     };
 
+    if task.has_context(name)
+    {
+        return Err(Box::new(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!(
+                "Context {} already exists in task {}.",
+                tos::format_context(name),
+                tos::format_task(task),
+            ),
+        )));
+    }
+
     task.push_context(name.to_owned());
 
     tos::send_success(&format!(
         "Context {} created at {}.",
-        &name,
+        &tos::format_context(&name),
         &task_path.tos_format()
     ));
+
+    Ok(())
+}
+
+pub fn remove_context_in_task(
+    file: &mut File,
+    path: &str,
+    name: &str,
+) -> EResult<()>
+{
+    let task_path = itempath::TaskPath::parse(path)?;
+
+    let list = file.get_list_mut_forced(&task_path.list_name)?;
+
+    let task = if let Some(project_index) = task_path.project_index
+    {
+        list.get_project_mut_forced(project_index)?
+            .get_task_mut_forced(task_path.task_index)?
+    }
+    else
+    {
+        list.get_task_mut_forced(task_path.task_index)?
+    };
+
+    let context_index = match task.find_context(name)
+    {
+        Some(index) => index,
+        None =>
+        {
+            return Err(Box::new(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Context not found.",
+            )));
+        }
+    };
+
+    let removed_context = task.contexts_mut().remove(context_index);
+
+    tos::send_success(&format!(
+        "Context {} removed from {}.",
+        &tos::format_context(&removed_context),
+        &task_path.tos_format(),
+    ));
+
+    Ok(())
+}
+
+pub fn list_contexts_in_task(file: &mut File, path: &str) -> EResult<()>
+{
+    let task_path = itempath::TaskPath::parse(path)?;
+
+    let list = file.get_list_mut_forced(&task_path.list_name)?;
+
+    let task = if let Some(project_index) = task_path.project_index
+    {
+        list.get_project_mut_forced(project_index)?
+            .get_task_mut_forced(task_path.task_index)?
+    }
+    else
+    {
+        list.get_task_mut_forced(task_path.task_index)?
+    };
+
+    if task.contexts().is_empty()
+    {
+        tos::send_info(&format!("Task {} is empty.", tos::format_task(&task)));
+        return Ok(());
+    }
+
+    let mut output = tos::OutputBlock::new();
+
+    output.insert_line(&format!("Contexts in {}", tos::format_task(task)), 0);
+
+    for context in task.contexts().iter()
+    {
+        output.insert_line(&format!("• {}", &tos::format_context(context)), 1);
+    }
+
+    output.send();
 
     Ok(())
 }
