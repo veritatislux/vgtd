@@ -188,7 +188,7 @@ often useful to be able to have a user-wide repository of tasks, so you can,
 for instance, store your personal tasks and projects.
 
 To address that necessity, vGTD has brought the **Global Workspace** feature to
-3.0.
+2.0.
 
 To access the Global Workspace from anywhere, just use any command like you
 normally would, but add the `--global` option (or its shortform `-g`) after the
